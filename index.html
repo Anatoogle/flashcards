@@ -3,276 +3,407 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flashcards — Topics & Sessions</title>
+  <title>FlashLearn — Smart flashcard learning</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='18' font-size='18'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='18' font-size='18'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E">
   <style>
-    .card{ @apply bg-slate-900 border border-slate-700 rounded-2xl shadow-xl; }
-    .btn{ @apply inline-flex items-center justify-center rounded-xl px-3 py-2 border transition; }
-    .btn-primary{ @apply bg-blue-600 border-blue-600 text-white hover:bg-blue-500; }
-    .btn-success{ @apply bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-500; }
-    .btn-danger{ @apply bg-rose-600 border-rose-600 text-white hover:bg-rose-500; }
-    .btn-ghost{ @apply border-slate-600 text-slate-200 hover:bg-slate-800; }
-    .input{ @apply w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100; }
-    .label{ @apply text-slate-400 text-sm; }
-    .muted{ @apply text-slate-400; }
-    .term{ @apply text-2xl font-bold; }
+    .card { @apply bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-sm; }
+    .btn  { @apply inline-flex items-center justify-center rounded-xl px-3 py-2 border text-sm font-medium transition; }
+    .btn-primary { @apply bg-blue-600 border-blue-600 text-white hover:bg-blue-500; }
+    .btn-ghost   { @apply border-slate-300 text-slate-700 hover:bg-slate-50; }
+    .btn-danger  { @apply bg-rose-600 border-rose-600 text-white hover:bg-rose-500; }
+    .btn-icon    { @apply p-2 rounded-lg border border-slate-300 hover:bg-slate-50; }
+    .badge       { @apply text-xs px-2 py-0.5 rounded-full border; }
+    .badge-green { @apply bg-emerald-50 text-emerald-700 border-emerald-200; }
+    .badge-gray  { @apply bg-slate-50 text-slate-700 border-slate-200; }
+    .badge-red   { @apply bg-rose-50 text-rose-700 border-rose-200; }
+    .input { @apply w-full bg-white border border-slate-300 rounded-xl px-3 py-2; }
+    .select { @apply w-full bg-white border border-slate-300 rounded-xl px-3 py-2; }
+    .textarea { @apply w-full bg-white border border-slate-300 rounded-xl px-3 py-2; }
+    .muted { @apply text-slate-500; }
+    .term { @apply text-lg font-semibold; }
+    .modal { @apply fixed inset-0 bg-black/30 flex items-center justify-center p-4; }
+    .modal-card { @apply w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 p-4; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
-  <header class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-      <h1 class="text-xl font-semibold">🧠 Flashcards</h1>
-      <nav id="breadcrumb" class="text-sm text-slate-400">Dashboard</nav>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+  <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="text-blue-600">📘</div>
+        <h1 class="text-xl font-semibold">FlashLearn</h1>
+        <div class="ml-4 text-sm text-slate-500">Smart flashcard learning</div>
+      </div>
+      <nav id="breadcrumb" class="text-sm text-slate-500">Dashboard</nav>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-6">
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <!-- Dashboard -->
     <section id="view-dashboard" class="hidden">
-      <div class="card p-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Topics</h2>
-          <button id="btn-new-topic" class="btn btn-primary">＋ New Topic</button>
-        </div>
-        <ul id="topic-list" class="mt-3 space-y-2"></ul>
-        <p class="muted mt-2">Data is stored locally in your browser (LocalStorage). Use Export/Import to back up.</p>
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-2xl font-semibold">Your Learning Topics</h2>
+        <button id="btn-new-topic" class="btn btn-primary">＋ Create Topic</button>
       </div>
+      <p class="muted mb-4">Organize your flashcards by topic and track your learning progress</p>
+      <div id="topic-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
     </section>
 
+    <!-- Topic detail -->
     <section id="view-topic" class="hidden">
-      <div class="card p-4">
-        <div class="flex items-center justify-between">
-          <h2 id="topic-title" class="text-lg font-semibold">Topic</h2>
-          <div class="flex gap-2">
-            <button id="btn-back" class="btn btn-ghost">← Back</button>
-            <button id="btn-delete-topic" class="btn btn-danger">Delete Topic</button>
-          </div>
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 id="topic-title" class="text-2xl font-semibold">Topic</h2>
+          <p id="topic-desc" class="muted"></p>
         </div>
-
-        <div class="grid md:grid-cols-2 gap-4 mt-3">
-          <div class="card p-4">
-            <h3 class="font-semibold mb-2">Cards</h3>
-            <div class="flex gap-2">
-              <input id="new-card-term" class="input" placeholder="New term e.g. Polymorphism"/>
-              <button id="btn-add-card" class="btn btn-primary">Add</button>
-            </div>
-            <ul id="card-list" class="mt-3 space-y-2"></ul>
-          </div>
-
-          <div class="card p-4">
-            <h3 class="font-semibold mb-2">Start a Learning Session</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <label class="label">Pile to review
-                <select id="session-pile" class="input mt-1">
-                  <option value="all">All</option>
-                  <option value="passed">Passed</option>
-                  <option value="failed">Failed</option>
-                </select>
-              </label>
-              <label class="label">Number of cards
-                <input id="session-count" type="number" min="1" value="5" class="input mt-1"/>
-              </label>
-            </div>
-            <button id="btn-start-session" class="btn btn-primary mt-3">Start Session ▶</button>
-            <p id="pile-stats" class="muted mt-2"></p>
-          </div>
+        <div class="flex gap-2">
+          <button id="btn-topic-learn" class="btn btn-primary">▶ Start Learning</button>
+          <button id="btn-topic-books" class="btn btn-ghost" title="View cards">📖</button>
+          <button id="btn-topic-add" class="btn btn-ghost" title="Add card">＋</button>
+          <button id="btn-topic-delete" class="btn btn-danger">Delete Topic</button>
         </div>
       </div>
+
+      <!-- Cards toolbar -->
+      <div class="card p-4 mb-4">
+        <div class="flex flex-col md:flex-row gap-3 items-center">
+          <input id="cards-search" class="input md:flex-1" placeholder="Search cards..."/>
+          <select id="cards-filter" class="select w-full md:w-48">
+            <option value="all">All Cards</option>
+            <option value="passed">Passed Cards</option>
+            <option value="failed">Failed Cards</option>
+          </select>
+          <button id="btn-add-card" class="btn btn-primary">＋ Add Card</button>
+        </div>
+      </div>
+
+      <!-- Cards grid -->
+      <div id="cards-grid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
     </section>
 
+    <!-- Session -->
     <section id="view-session" class="hidden">
-      <div class="card p-4">
+      <div class="card p-5">
         <div class="flex items-center justify-between">
-          <h2 id="session-topic-title" class="text-lg font-semibold">Session</h2>
+          <h3 id="session-topic-title" class="text-xl font-semibold">Session</h3>
           <button id="btn-exit-session" class="btn btn-ghost">⏹ End Session</button>
         </div>
 
-        <div id="session-container" class="space-y-3">
-          <div id="session-progress" class="muted"></div>
-          <div class="border border-slate-700 rounded-xl p-3">
-            <div class="label">Term</div>
-            <div id="session-term" class="term"></div>
+        <div id="session-config" class="mt-4">
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label class="text-sm text-slate-600">Cards to Review
+              <select id="session-pile" class="select mt-1">
+                <option value="all">All</option>
+                <option value="passed">Passed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </label>
+            <label class="text-sm text-slate-600">How many cards?
+              <input id="session-count" type="number" min="1" value="5" class="input mt-1"/>
+            </label>
           </div>
-          <label class="label">Type your explanation</label>
-          <textarea id="session-input" rows="6" class="input"></textarea>
-
-          <div class="flex gap-2">
-            <button id="btn-pass" class="btn btn-success">Pass ✓</button>
-            <button id="btn-fail" class="btn btn-danger">Fail ✗</button>
+          <div class="flex gap-2 mt-3">
+            <button id="btn-session-begin" class="btn btn-primary">Start Session ▶</button>
+            <div id="pile-stats" class="text-sm text-slate-500"></div>
           </div>
         </div>
 
-        <div id="session-summary" class="hidden mt-3">
-          <h3 class="font-semibold">Session Summary</h3>
-          <p id="summary-text" class="mt-1"></p>
-          <button id="btn-summary-back" class="btn btn-ghost mt-2">Back to Topic</button>
+        <div id="session-container" class="hidden mt-6 space-y-4">
+          <div id="session-progress" class="text-sm text-slate-500"></div>
+          <div class="border border-slate-200 rounded-xl p-4 bg-white">
+            <div class="text-xs text-slate-500 mb-1">Term</div>
+            <div id="session-term" class="term"></div>
+          </div>
+
+          <label class="text-sm text-slate-600">Type your explanation</label>
+          <textarea id="session-input" rows="6" class="textarea"></textarea>
+
+          <div class="flex gap-2">
+            <button id="btn-pass" class="btn btn-primary">Pass ✓</button>
+            <button id="btn-fail" class="btn btn-danger">Fail ✗</button>
+          </div>
+
+          <div id="session-summary" class="hidden">
+            <h4 class="font-semibold">Session Summary</h4>
+            <p id="summary-text" class="text-slate-600"></p>
+            <button id="btn-summary-back" class="btn btn-ghost mt-2">Back to Topic</button>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="max-w-5xl mx-auto px-4 pb-8">
-    <div class="flex flex-wrap items-center gap-2 text-slate-400">
+  <footer class="max-w-6xl mx-auto px-4 pb-10">
+    <div class="flex flex-wrap items-center gap-2 text-slate-500">
       <button id="btn-export" class="btn btn-ghost">Export JSON</button>
       <label class="btn btn-ghost cursor-pointer">
         Import JSON
         <input id="import-file" type="file" accept="application/json" hidden/>
       </label>
-      <span class="muted">Deploy this single file to Netlify/Vercel/GitHub Pages to use it on any computer.</span>
     </div>
   </footer>
 
-  <template id="tpl-topic-item">
-    <li class="card p-3 flex items-center justify-between">
-      <div>
-        <div class="font-medium title"></div>
-        <div class="text-sm muted stats"></div>
+  <!-- Modals -->
+  <div id="modal-card" class="modal hidden">
+    <div class="modal-card">
+      <div class="flex items-center justify-between mb-2">
+        <h3 id="modal-card-title" class="text-lg font-semibold">Add New Card</h3>
+        <button id="modal-card-close" class="btn-icon">✕</button>
       </div>
-      <button class="btn btn-ghost">Open →</button>
-    </li>
-  </template>
+      <p class="text-sm text-slate-600 mb-3">Adding to: <span id="modal-card-topic" class="font-medium"></span></p>
+      <label class="text-sm text-slate-600">Term *</label>
+      <input id="modal-card-term" class="input mt-1" placeholder="e.g. Polymorphism"/>
+      <label class="text-sm text-slate-600 mt-3 block">Explanation *</label>
+      <textarea id="modal-card-expl" class="textarea mt-1" rows="6" placeholder="Write a clear explanation of this term..."></textarea>
+      <div class="flex items-center justify-between mt-3">
+        <button id="modal-card-cancel" class="btn btn-ghost">Cancel</button>
+        <button id="modal-card-save" class="btn btn-primary">＋ Add Card</button>
+      </div>
+    </div>
+  </div>
 
-  <template id="tpl-card-item">
-    <li class="card p-3 flex items-center justify-between">
-      <div>
-        <div class="font-medium title"></div>
-        <div class="text-sm muted status"></div>
+  <div id="modal-session" class="modal hidden">
+    <div class="modal-card">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-lg font-semibold">Start Learning Session</h3>
+        <button id="modal-session-close" class="btn-icon">✕</button>
       </div>
-      <div class="flex gap-2">
-        <button class="btn btn-ghost text-emerald-300" data-action="mark-pass">Pass</button>
-        <button class="btn btn-ghost text-rose-300" data-action="mark-fail">Fail</button>
-        <button class="btn btn-danger" data-action="delete">Delete</button>
+      <p class="text-sm text-slate-600">Configure your learning session below</p>
+      <label class="text-sm text-slate-600 mt-3 block">Cards to Review</label>
+      <select id="modal-session-pile" class="select mt-1">
+        <option value="all">All Cards</option>
+        <option value="passed">Passed Cards</option>
+        <option value="failed">Failed Cards</option>
+      </select>
+      <label class="text-sm text-slate-600 mt-3 block">How many cards?</label>
+      <input id="modal-session-count" type="number" min="1" value="5" class="input mt-1"/>
+      <div id="modal-session-stats" class="text-sm text-slate-500 mt-2"></div>
+      <div class="flex items-center justify-between mt-4">
+        <button class="btn btn-ghost" id="modal-session-cancel">Cancel</button>
+        <button class="btn btn-primary" id="modal-session-start">Start Session</button>
       </div>
-    </li>
-  </template>
+    </div>
+  </div>
 
   <script>
-    const KEY = "fc_data_v1";
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const KEY = "fc_data_v2";
     const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
-
-    function loadData(){
-      try{ const raw = localStorage.getItem(KEY); return raw? JSON.parse(raw): {topics:[]}; }
-      catch(e){ console.error(e); return {topics:[]}; }
-    }
+    function loadData(){ try{ const raw=localStorage.getItem(KEY); return raw? JSON.parse(raw): {topics:[]}; }catch(e){return {topics:[]};}}
     function saveData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
-
     let data = loadData();
     let currentTopicId = null;
     let session = null;
-
-    function setView(id){
-      document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
-      document.querySelector(id).classList.remove('hidden');
-    }
+    let editingCardId = null;
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    function setView(id){ ['#view-dashboard','#view-topic','#view-session'].forEach(sel=>document.querySelector(sel).classList.add('hidden')); document.querySelector(id).classList.remove('hidden'); }
     function setBreadcrumb(parts){ document.getElementById('breadcrumb').textContent = parts.join(' / '); }
+    function topicById(id){ return data.topics.find(t=>t.id===id); }
+    function computeStats(topic){ let p=0,f=0; for(const c of topic.cards){ if(c.status==='passed') p++; else if(c.status==='failed') f++; } return {total: topic.cards.length, passed:p, failed:f, pct: topic.cards.length? Math.round((p/topic.cards.length)*100): 0}; }
 
     function renderDashboard(){
       setView('#view-dashboard'); setBreadcrumb(['Dashboard']);
-      const list = document.getElementById('topic-list'); list.innerHTML = '';
-      const tpl = document.getElementById('tpl-topic-item');
+      const grid = document.getElementById('topic-grid'); grid.innerHTML='';
       if (!data.topics.length){
-        const li = document.createElement('li'); li.className = 'card p-3 muted';
-        li.textContent = 'No topics yet. Click “＋ New Topic”.'; list.appendChild(li); return;
+        const empty = document.createElement('div'); empty.className='card p-6 text-center text-slate-600'; empty.textContent='No topics yet. Click “Create Topic”.'; grid.appendChild(empty); return;
       }
       for(const t of data.topics){
-        const li = tpl.content.cloneNode(true);
-        li.querySelector('.title').textContent = t.name;
-        const {passed, failed} = countTopicStats(t);
-        li.querySelector('.stats').textContent = `${t.cards.length} cards · ${passed} passed · ${failed} failed`;
-        li.querySelector('button').addEventListener('click', ()=>openTopic(t.id));
-        list.appendChild(li);
+        const s = computeStats(t);
+        const el = document.createElement('div'); el.className='card p-4';
+        el.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-blue-600">📘</span>
+              <h3 class="text-lg font-semibold">${t.name}</h3>
+            </div>
+            <span class="badge ${s.pct===100?'badge-green':'badge-gray'}">${s.pct}% passed</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-600">${t.desc||''}</p>
+          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+            <div class="card p-2"><div class="text-xs text-slate-500">Total</div><div class="font-semibold">${s.total}</div></div>
+            <div class="card p-2"><div class="text-xs text-slate-500">Passed</div><div class="font-semibold text-emerald-600">${s.passed}</div></div>
+            <div class="card p-2"><div class="text-xs text-slate-500">Failed</div><div class="font-semibold text-rose-600">${s.failed}</div></div>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button class="btn btn-primary w-full" data-action="learn">▶ Start Learning</button>
+            <button class="btn btn-ghost" title="View cards" data-action="books">📖</button>
+            <button class="btn btn-ghost" title="Add card" data-action="add">＋</button>
+          </div>`;
+        el.querySelector('[data-action="learn"]').addEventListener('click', ()=>{ openTopic(t.id); openSessionModal(); });
+        el.querySelector('[data-action="books"]').addEventListener('click', ()=>openTopic(t.id));
+        el.querySelector('[data-action="add"]').addEventListener('click', ()=>{ openTopic(t.id); openCardModal(); });
+        grid.appendChild(el);
       }
-    }
-    function countTopicStats(topic){
-      let passed=0, failed=0;
-      for(const c of topic.cards){ if(c.status==='passed') passed++; else if(c.status==='failed') failed++; }
-      return {passed, failed};
     }
 
     function openTopic(id){
       currentTopicId = id;
-      const topic = data.topics.find(t=>t.id===id);
-      if(!topic){ renderDashboard(); return; }
-      setView('#view-topic'); setBreadcrumb(['Dashboard', topic.name]);
-      document.getElementById('topic-title').textContent = topic.name;
-
-      const list = document.getElementById('card-list'); list.innerHTML='';
-      const tpl = document.getElementById('tpl-card-item');
-      if(!topic.cards.length){
-        const li = document.createElement('li'); li.className='card p-3 muted';
-        li.textContent = 'No cards yet. Add your first term.'; list.appendChild(li);
-      } else {
-        for(const c of topic.cards){
-          const li = tpl.content.cloneNode(true);
-          li.querySelector('.title').textContent = c.term;
-          li.querySelector('.status').textContent = `Status: ${c.status || 'none'}`;
-          const [btnPass, btnFail, btnDel] = li.querySelectorAll('button[data-action]');
-          btnPass.addEventListener('click', ()=>markCardStatus(topic.id, c.id, 'passed'));
-          btnFail.addEventListener('click', ()=>markCardStatus(topic.id, c.id, 'failed'));
-          btnDel.addEventListener('click', ()=>deleteCard(topic.id, c.id));
-          list.appendChild(li);
+      const t = topicById(id);
+      if(!t){ renderDashboard(); return; }
+      setView('#view-topic'); setBreadcrumb(['Dashboard', t.name]);
+      document.getElementById('topic-title').textContent = t.name;
+      document.getElementById('topic-desc').textContent = t.desc || '';
+      document.getElementById('btn-topic-learn').onclick = ()=>openSessionModal();
+      document.getElementById('btn-topic-add').onclick = ()=>openCardModal();
+      document.getElementById('btn-topic-delete').onclick = ()=>{
+        if(confirm(\`Delete topic "\${t.name}" and all its cards?\`)){
+          data.topics = data.topics.filter(x=>x.id!==t.id); saveData(data); renderDashboard();
         }
+      };
+      document.getElementById('cards-search').value='';
+      document.getElementById('cards-filter').value='all';
+      renderCardsGrid();
+    }
+
+    function renderCardsGrid(){
+      const t = topicById(currentTopicId);
+      const query = document.getElementById('cards-search').value.trim().toLowerCase();
+      const filter = document.getElementById('cards-filter').value;
+      const grid = document.getElementById('cards-grid'); grid.innerHTML='';
+      let cards = [...t.cards];
+      if (filter==='passed') cards = cards.filter(c=>c.status==='passed');
+      if (filter==='failed') cards = cards.filter(c=>c.status==='failed');
+      if (query) cards = cards.filter(c => c.term.toLowerCase().includes(query) || (c.expl||'').toLowerCase().includes(query));
+      if (!cards.length){
+        const empty = document.createElement('div'); empty.className='card p-6 text-center text-slate-600'; empty.textContent='No cards match the current filter.'; grid.appendChild(empty); return;
       }
+      for(const c of cards){
+        const card = document.createElement('div'); card.className='card p-4';
+        const badgeClass = c.status==='passed' ? 'badge-green' : (c.status==='failed' ? 'badge-red' : 'badge-gray');
+        const badgeText = c.status ? c.status[0].toUpperCase()+c.status.slice(1) : 'None';
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <h4 class="term">${c.term}</h4>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <p class="mt-2 text-sm text-slate-700">${(c.expl||'').length>220 ? (c.expl.slice(0,220) + '…') : (c.expl||'')}</p>
+          <div class="mt-3">
+            <select class="select w-full" data-id="${c.id}">
+              <option value="none" ${c.status==='none'?'selected':''}>None</option>
+              <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
+              <option value="failed" ${c.status==='failed'?'selected':''}>Failed</option>
+            </select>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button class="btn btn-ghost" data-edit="${c.id}">✎ Edit</button>
+            <button class="btn btn-danger ml-auto" data-del="${c.id}">Delete</button>
+          </div>`;
+        card.querySelector('select').addEventListener('change', (e)=>{
+          const v = e.target.value;
+          const cardObj = t.cards.find(x=>x.id===c.id);
+          cardObj.status = v; saveData(data); renderCardsGrid();
+        });
+        card.querySelector('[data-edit]').addEventListener('click', ()=>openCardModal(c.id));
+        card.querySelector('[data-del]').addEventListener('click', ()=>{
+          if(confirm(\`Delete card "\${c.term}"?\`)){
+            t.cards = t.cards.filter(x=>x.id!==c.id); saveData(data); renderCardsGrid();
+          }
+        });
+        grid.appendChild(card);
+      }
+    }
 
-      const stats = countTopicStats(topic);
-      document.getElementById('pile-stats').textContent = `Pile sizes — All: ${topic.cards.length}, Passed: ${stats.passed}, Failed: ${stats.failed}`;
-      document.getElementById('session-count').max = String(topic.cards.length || 1);
-    }
-    function markCardStatus(topicId, cardId, status){
-      const topic = data.topics.find(t=>t.id===topicId); if(!topic) return;
-      const card = topic.cards.find(c=>c.id===cardId); if(!card) return;
-      card.status = status; saveData(data); openTopic(topicId);
-    }
-    function deleteCard(topicId, cardId){
-      const topic = data.topics.find(t=>t.id===topicId); if(!topic) return;
-      topic.cards = topic.cards.filter(c=>c.id!==cardId); saveData(data); openTopic(topicId);
-    }
+    document.getElementById('cards-search').addEventListener('input', renderCardsGrid);
+    document.getElementById('cards-filter').addEventListener('change', renderCardsGrid);
+    document.getElementById('btn-add-card').addEventListener('click', ()=>openCardModal());
 
-    function startSession(){
-      const topic = data.topics.find(t=>t.id===currentTopicId); if(!topic) return;
+    function openCardModal(cardId=null){
+      const t = topicById(currentTopicId);
+      editingCardId = cardId;
+      document.getElementById('modal-card-topic').textContent = t.name;
+      document.getElementById('modal-card-title').textContent = cardId ? 'Edit Card' : 'Add New Card';
+      document.getElementById('modal-card-save').textContent = cardId ? 'Save' : '＋ Add Card';
+      if (cardId){
+        const c = t.cards.find(x=>x.id===cardId);
+        document.getElementById('modal-card-term').value = c.term;
+        document.getElementById('modal-card-expl').value = c.expl || '';
+      } else {
+        document.getElementById('modal-card-term').value = '';
+        document.getElementById('modal-card-expl').value = '';
+      }
+      document.getElementById('modal-card').classList.remove('hidden');
+    }
+    function closeCardModal(){ document.getElementById('modal-card').classList.add('hidden'); }
+    document.getElementById('modal-card-close').onclick = closeCardModal;
+    document.getElementById('modal-card-cancel').onclick = closeCardModal;
+    document.getElementById('modal-card').addEventListener('click', (e)=>{ if(e.target.id==='modal-card') closeCardModal(); });
+    document.getElementById('modal-card-save').addEventListener('click', ()=>{
+      const term = document.getElementById('modal-card-term').value.trim();
+      const expl = document.getElementById('modal-card-expl').value.trim();
+      if(!term || !expl){ alert('Please enter both term and explanation.'); return; }
+      const t = topicById(currentTopicId);
+      if (editingCardId){
+        const c = t.cards.find(x=>x.id===editingCardId); c.term = term; c.expl = expl;
+      } else {
+        t.cards.push({ id: uid(), term, expl, status:'none' });
+      }
+      saveData(data); closeCardModal(); renderCardsGrid();
+    });
+
+    function openSessionModal(){
+      const t = topicById(currentTopicId);
+      const s = computeStats(t);
+      document.getElementById('modal-session-stats').textContent = \`Available — All: \${s.total}, Passed: \${s.passed}, Failed: \${s.failed}\`;
+      document.getElementById('modal-session').classList.remove('hidden');
+    }
+    function closeSessionModal(){ document.getElementById('modal-session').classList.add('hidden'); }
+    document.getElementById('btn-topic-learn').addEventListener('click', openSessionModal);
+    document.getElementById('modal-session-close').onclick = closeSessionModal;
+    document.getElementById('modal-session-cancel').onclick = closeSessionModal;
+    document.getElementById('modal-session').addEventListener('click', (e)=>{ if(e.target.id==='modal-session') closeSessionModal(); });
+    document.getElementById('modal-session-start').addEventListener('click', ()=>{
+      document.getElementById('session-pile').value = document.getElementById('modal-session-pile').value;
+      document.getElementById('session-count').value = document.getElementById('modal-session-count').value;
+      closeSessionModal();
+      setView('#view-session');
+      document.getElementById('session-config').classList.remove('hidden');
+      document.getElementById('session-container').classList.add('hidden');
+      document.getElementById('btn-session-begin').click();
+    });
+
+    document.getElementById('btn-session-begin').addEventListener('click', ()=>{
+      const t = topicById(currentTopicId);
       const pile = document.getElementById('session-pile').value;
       const count = Math.max(1, parseInt(document.getElementById('session-count').value || '1', 10));
-      let pool = topic.cards;
-      if(pile==='passed') pool = topic.cards.filter(c=>c.status==='passed');
-      else if(pile==='failed') pool = topic.cards.filter(c=>c.status==='failed');
-      const shuffled = [...pool].sort(()=>Math.random()-0.5);
-      const deck = shuffled.slice(0, Math.min(count, shuffled.length)).map(c=>c.id);
-      session = {topicId: topic.id, deck, i:0, passed:0, failed:0, pile};
-      document.getElementById('session-topic-title').textContent = `Session — ${topic.name} (${pile})`;
-      document.getElementById('session-summary').classList.add('hidden');
+      let pool = t.cards;
+      if(pile==='passed') pool = t.cards.filter(c=>c.status==='passed');
+      if(pile==='failed') pool = t.cards.filter(c=>c.status==='failed');
+      if(!pool.length){ alert('No cards in selected pile.'); return; }
+      const deck = [...pool].sort(()=>Math.random()-0.5).slice(0, Math.min(count, pool.length)).map(c=>c.id);
+      session = { topicId: t.id, pile, deck, i:0, passed:0, failed:0 };
+      document.getElementById('session-config').classList.add('hidden');
       document.getElementById('session-container').classList.remove('hidden');
-      document.getElementById('session-input').value = '';
-      setView('#view-session'); renderCurrentCard();
-    }
+      document.getElementById('session-input').value='';
+      renderCurrentCard();
+    });
+
     function renderCurrentCard(){
       if(!session) return;
-      const topic = data.topics.find(t=>t.id===session.topicId);
+      const t = topicById(session.topicId);
       const total = session.deck.length;
-      if(session.i >= total || total===0){ showSummary(); return; }
-      const cardId = session.deck[session.i];
-      const card = topic.cards.find(c=>c.id===cardId);
-      document.getElementById('session-term').textContent = card? card.term : 'Unknown card';
-      document.getElementById('session-progress').textContent = `Card ${session.i+1} of ${total} — Passed: ${session.passed}, Failed: ${session.failed}`;
+      if(session.i >= total){ showSummary(); return; }
+      const card = t.cards.find(c=>c.id===session.deck[session.i]);
+      document.getElementById('session-term').textContent = card ? card.term : 'Unknown card';
+      document.getElementById('session-progress').textContent = \`Card \${session.i+1} of \${total} — Passed: \${session.passed}, Failed: \${session.failed}\`;
       document.getElementById('session-input').focus();
     }
     function handlePassFail(result){
       if(!session) return;
-      const topic = data.topics.find(t=>t.id===session.topicId);
-      const cardId = session.deck[session.i];
-      const card = topic.cards.find(c=>c.id===cardId);
-      if(result==='pass'){ session.passed += 1; if(card) card.status='passed'; }
-      else { session.failed += 1; if(card) card.status='failed'; }
-      saveData(data);
-      session.i += 1; document.getElementById('session-input').value=''; renderCurrentCard();
+      const t = topicById(session.topicId);
+      const card = t.cards.find(c=>c.id===session.deck[session.i]);
+      if(result==='pass'){ session.passed++; if(card) card.status='passed'; }
+      else { session.failed++; if(card) card.status='failed'; }
+      saveData(data); session.i++; document.getElementById('session-input').value=''; renderCurrentCard();
     }
+    document.getElementById('btn-pass').onclick = ()=>handlePassFail('pass');
+    document.getElementById('btn-fail').onclick = ()=>handlePassFail('fail');
     function showSummary(){
-      document.getElementById('session-container').classList.add('hidden');
       const total = session.deck.length;
-      document.getElementById('summary-text').textContent = `You reviewed ${total} card(s). Passed: ${session.passed}, Failed: ${session.failed}.`;
       document.getElementById('session-summary').classList.remove('hidden');
+      document.getElementById('summary-text').textContent = \`You reviewed \${total} card(s). Passed: \${session.passed}, Failed: \${session.failed}.\`;
     }
+    document.getElementById('btn-exit-session').onclick = ()=>{ const tid = session? session.topicId: currentTopicId; session=null; openTopic(tid); };
+    document.getElementById('btn-summary-back').onclick = ()=>{ const tid = session? session.topicId: currentTopicId; session=null; openTopic(tid); };
 
     function exportJSON(){
       const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
@@ -291,43 +422,16 @@
       };
       reader.readAsText(file);
     }
+    document.getElementById('btn-export').onclick = exportJSON;
+    document.getElementById('import-file').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) importJSON(f); e.target.value=''; });
 
-    window.addEventListener('DOMContentLoaded', ()=>{
-      renderDashboard();
-      document.getElementById('btn-new-topic').addEventListener('click', ()=>{
-        const name = prompt('New topic name:'); if(!name) return;
-        data.topics.push({id: uid(), name: name.trim(), cards: []});
-        saveData(data); renderDashboard();
-      });
-      document.getElementById('btn-back').addEventListener('click', renderDashboard);
-      document.getElementById('btn-delete-topic').addEventListener('click', ()=>{
-        if(!currentTopicId) return;
-        const topic = data.topics.find(t=>t.id===currentTopicId);
-        if(topic && confirm(`Delete topic "${topic.name}" and all its cards?`)){
-          data.topics = data.topics.filter(t=>t.id!==currentTopicId);
-          currentTopicId = null; saveData(data); renderDashboard();
-        }
-      });
-      document.getElementById('btn-add-card').addEventListener('click', ()=>{
-        const termEl = document.getElementById('new-card-term'); const term = termEl.value.trim(); if(!term) return;
-        const topic = data.topics.find(t=>t.id===currentTopicId);
-        topic.cards.push({id: uid(), term, status:'none'});
-        termEl.value=''; saveData(data); openTopic(topic.id);
-      });
-      document.getElementById('btn-start-session').addEventListener('click', startSession);
-      document.getElementById('btn-exit-session').addEventListener('click', ()=>{
-        const tid = session? session.topicId : currentTopicId; session=null; openTopic(tid);
-      });
-      document.getElementById('btn-summary-back').addEventListener('click', ()=>{
-        const tid = session? session.topicId : currentTopicId; session=null; openTopic(tid);
-      });
-      document.getElementById('btn-pass').addEventListener('click', ()=>handlePassFail('pass'));
-      document.getElementById('btn-fail').addEventListener('click', ()=>handlePassFail('fail'));
-      document.getElementById('btn-export').addEventListener('click', exportJSON);
-      document.getElementById('import-file').addEventListener('change', e=>{
-        const file = e.target.files?.[0]; if(file) importJSON(file); e.target.value='';
-      });
+    document.getElementById('btn-new-topic').addEventListener('click', ()=>{
+      const name = prompt('Topic name:'); if(!name) return;
+      const desc = prompt('Short description (optional):') || '';
+      data.topics.push({ id: uid(), name: name.trim(), desc: desc.trim(), cards: [] });
+      saveData(data); renderDashboard();
     });
+    window.addEventListener('DOMContentLoaded', renderDashboard);
   </script>
 </body>
 </html>
