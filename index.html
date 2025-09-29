@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcards — Topics & Sessions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='18' font-size='18'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
+  <style>
+    .card{ @apply bg-slate-900 border border-slate-700 rounded-2xl shadow-xl; }
+    .btn{ @apply inline-flex items-center justify-center rounded-xl px-3 py-2 border transition; }
+    .btn-primary{ @apply bg-blue-600 border-blue-600 text-white hover:bg-blue-500; }
+    .btn-success{ @apply bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-500; }
+    .btn-danger{ @apply bg-rose-600 border-rose-600 text-white hover:bg-rose-500; }
+    .btn-ghost{ @apply border-slate-600 text-slate-200 hover:bg-slate-800; }
+    .input{ @apply w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100; }
+    .label{ @apply text-slate-400 text-sm; }
+    .muted{ @apply text-slate-400; }
+    .term{ @apply text-2xl font-bold; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <header class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="text-xl font-semibold">🧠 Flashcards</h1>
+      <nav id="breadcrumb" class="text-sm text-slate-400">Dashboard</nav>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <section id="view-dashboard" class="hidden">
+      <div class="card p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Topics</h2>
+          <button id="btn-new-topic" class="btn btn-primary">＋ New Topic</button>
+        </div>
+        <ul id="topic-list" class="mt-3 space-y-2"></ul>
+        <p class="muted mt-2">Data is stored locally in your browser (LocalStorage). Use Export/Import to back up.</p>
+      </div>
+    </section>
+
+    <section id="view-topic" class="hidden">
+      <div class="card p-4">
+        <div class="flex items-center justify-between">
+          <h2 id="topic-title" class="text-lg font-semibold">Topic</h2>
+          <div class="flex gap-2">
+            <button id="btn-back" class="btn btn-ghost">← Back</button>
+            <button id="btn-delete-topic" class="btn btn-danger">Delete Topic</button>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-3">
+          <div class="card p-4">
+            <h3 class="font-semibold mb-2">Cards</h3>
+            <div class="flex gap-2">
+              <input id="new-card-term" class="input" placeholder="New term e.g. Polymorphism"/>
+              <button id="btn-add-card" class="btn btn-primary">Add</button>
+            </div>
+            <ul id="card-list" class="mt-3 space-y-2"></ul>
+          </div>
+
+          <div class="card p-4">
+            <h3 class="font-semibold mb-2">Start a Learning Session</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label class="label">Pile to review
+                <select id="session-pile" class="input mt-1">
+                  <option value="all">All</option>
+                  <option value="passed">Passed</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </label>
+              <label class="label">Number of cards
+                <input id="session-count" type="number" min="1" value="5" class="input mt-1"/>
+              </label>
+            </div>
+            <button id="btn-start-session" class="btn btn-primary mt-3">Start Session ▶</button>
+            <p id="pile-stats" class="muted mt-2"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-session" class="hidden">
+      <div class="card p-4">
+        <div class="flex items-center justify-between">
+          <h2 id="session-topic-title" class="text-lg font-semibold">Session</h2>
+          <button id="btn-exit-session" class="btn btn-ghost">⏹ End Session</button>
+        </div>
+
+        <div id="session-container" class="space-y-3">
+          <div id="session-progress" class="muted"></div>
+          <div class="border border-slate-700 rounded-xl p-3">
+            <div class="label">Term</div>
+            <div id="session-term" class="term"></div>
+          </div>
+          <label class="label">Type your explanation</label>
+          <textarea id="session-input" rows="6" class="input"></textarea>
+
+          <div class="flex gap-2">
+            <button id="btn-pass" class="btn btn-success">Pass ✓</button>
+            <button id="btn-fail" class="btn btn-danger">Fail ✗</button>
+          </div>
+        </div>
+
+        <div id="session-summary" class="hidden mt-3">
+          <h3 class="font-semibold">Session Summary</h3>
+          <p id="summary-text" class="mt-1"></p>
+          <button id="btn-summary-back" class="btn btn-ghost mt-2">Back to Topic</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-4 pb-8">
+    <div class="flex flex-wrap items-center gap-2 text-slate-400">
+      <button id="btn-export" class="btn btn-ghost">Export JSON</button>
+      <label class="btn btn-ghost cursor-pointer">
+        Import JSON
+        <input id="import-file" type="file" accept="application/json" hidden/>
+      </label>
+      <span class="muted">Deploy this single file to Netlify/Vercel/GitHub Pages to use it on any computer.</span>
+    </div>
+  </footer>
+
+  <template id="tpl-topic-item">
+    <li class="card p-3 flex items-center justify-between">
+      <div>
+        <div class="font-medium title"></div>
+        <div class="text-sm muted stats"></div>
+      </div>
+      <button class="btn btn-ghost">Open →</button>
+    </li>
+  </template>
+
+  <template id="tpl-card-item">
+    <li class="card p-3 flex items-center justify-between">
+      <div>
+        <div class="font-medium title"></div>
+        <div class="text-sm muted status"></div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-ghost text-emerald-300" data-action="mark-pass">Pass</button>
+        <button class="btn btn-ghost text-rose-300" data-action="mark-fail">Fail</button>
+        <button class="btn btn-danger" data-action="delete">Delete</button>
+      </div>
+    </li>
+  </template>
+
+  <script>
+    const KEY = "fc_data_v1";
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
+
+    function loadData(){
+      try{ const raw = localStorage.getItem(KEY); return raw? JSON.parse(raw): {topics:[]}; }
+      catch(e){ console.error(e); return {topics:[]}; }
+    }
+    function saveData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+
+    let data = loadData();
+    let currentTopicId = null;
+    let session = null;
+
+    function setView(id){
+      document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+      document.querySelector(id).classList.remove('hidden');
+    }
+    function setBreadcrumb(parts){ document.getElementById('breadcrumb').textContent = parts.join(' / '); }
+
+    function renderDashboard(){
+      setView('#view-dashboard'); setBreadcrumb(['Dashboard']);
+      const list = document.getElementById('topic-list'); list.innerHTML = '';
+      const tpl = document.getElementById('tpl-topic-item');
+      if (!data.topics.length){
+        const li = document.createElement('li'); li.className = 'card p-3 muted';
+        li.textContent = 'No topics yet. Click “＋ New Topic”.'; list.appendChild(li); return;
+      }
+      for(const t of data.topics){
+        const li = tpl.content.cloneNode(true);
+        li.querySelector('.title').textContent = t.name;
+        const {passed, failed} = countTopicStats(t);
+        li.querySelector('.stats').textContent = `${t.cards.length} cards · ${passed} passed · ${failed} failed`;
+        li.querySelector('button').addEventListener('click', ()=>openTopic(t.id));
+        list.appendChild(li);
+      }
+    }
+    function countTopicStats(topic){
+      let passed=0, failed=0;
+      for(const c of topic.cards){ if(c.status==='passed') passed++; else if(c.status==='failed') failed++; }
+      return {passed, failed};
+    }
+
+    function openTopic(id){
+      currentTopicId = id;
+      const topic = data.topics.find(t=>t.id===id);
+      if(!topic){ renderDashboard(); return; }
+      setView('#view-topic'); setBreadcrumb(['Dashboard', topic.name]);
+      document.getElementById('topic-title').textContent = topic.name;
+
+      const list = document.getElementById('card-list'); list.innerHTML='';
+      const tpl = document.getElementById('tpl-card-item');
+      if(!topic.cards.length){
+        const li = document.createElement('li'); li.className='card p-3 muted';
+        li.textContent = 'No cards yet. Add your first term.'; list.appendChild(li);
+      } else {
+        for(const c of topic.cards){
+          const li = tpl.content.cloneNode(true);
+          li.querySelector('.title').textContent = c.term;
+          li.querySelector('.status').textContent = `Status: ${c.status || 'none'}`;
+          const [btnPass, btnFail, btnDel] = li.querySelectorAll('button[data-action]');
+          btnPass.addEventListener('click', ()=>markCardStatus(topic.id, c.id, 'passed'));
+          btnFail.addEventListener('click', ()=>markCardStatus(topic.id, c.id, 'failed'));
+          btnDel.addEventListener('click', ()=>deleteCard(topic.id, c.id));
+          list.appendChild(li);
+        }
+      }
+
+      const stats = countTopicStats(topic);
+      document.getElementById('pile-stats').textContent = `Pile sizes — All: ${topic.cards.length}, Passed: ${stats.passed}, Failed: ${stats.failed}`;
+      document.getElementById('session-count').max = String(topic.cards.length || 1);
+    }
+    function markCardStatus(topicId, cardId, status){
+      const topic = data.topics.find(t=>t.id===topicId); if(!topic) return;
+      const card = topic.cards.find(c=>c.id===cardId); if(!card) return;
+      card.status = status; saveData(data); openTopic(topicId);
+    }
+    function deleteCard(topicId, cardId){
+      const topic = data.topics.find(t=>t.id===topicId); if(!topic) return;
+      topic.cards = topic.cards.filter(c=>c.id!==cardId); saveData(data); openTopic(topicId);
+    }
+
+    function startSession(){
+      const topic = data.topics.find(t=>t.id===currentTopicId); if(!topic) return;
+      const pile = document.getElementById('session-pile').value;
+      const count = Math.max(1, parseInt(document.getElementById('session-count').value || '1', 10));
+      let pool = topic.cards;
+      if(pile==='passed') pool = topic.cards.filter(c=>c.status==='passed');
+      else if(pile==='failed') pool = topic.cards.filter(c=>c.status==='failed');
+      const shuffled = [...pool].sort(()=>Math.random()-0.5);
+      const deck = shuffled.slice(0, Math.min(count, shuffled.length)).map(c=>c.id);
+      session = {topicId: topic.id, deck, i:0, passed:0, failed:0, pile};
+      document.getElementById('session-topic-title').textContent = `Session — ${topic.name} (${pile})`;
+      document.getElementById('session-summary').classList.add('hidden');
+      document.getElementById('session-container').classList.remove('hidden');
+      document.getElementById('session-input').value = '';
+      setView('#view-session'); renderCurrentCard();
+    }
+    function renderCurrentCard(){
+      if(!session) return;
+      const topic = data.topics.find(t=>t.id===session.topicId);
+      const total = session.deck.length;
+      if(session.i >= total || total===0){ showSummary(); return; }
+      const cardId = session.deck[session.i];
+      const card = topic.cards.find(c=>c.id===cardId);
+      document.getElementById('session-term').textContent = card? card.term : 'Unknown card';
+      document.getElementById('session-progress').textContent = `Card ${session.i+1} of ${total} — Passed: ${session.passed}, Failed: ${session.failed}`;
+      document.getElementById('session-input').focus();
+    }
+    function handlePassFail(result){
+      if(!session) return;
+      const topic = data.topics.find(t=>t.id===session.topicId);
+      const cardId = session.deck[session.i];
+      const card = topic.cards.find(c=>c.id===cardId);
+      if(result==='pass'){ session.passed += 1; if(card) card.status='passed'; }
+      else { session.failed += 1; if(card) card.status='failed'; }
+      saveData(data);
+      session.i += 1; document.getElementById('session-input').value=''; renderCurrentCard();
+    }
+    function showSummary(){
+      document.getElementById('session-container').classList.add('hidden');
+      const total = session.deck.length;
+      document.getElementById('summary-text').textContent = `You reviewed ${total} card(s). Passed: ${session.passed}, Failed: ${session.failed}.`;
+      document.getElementById('session-summary').classList.remove('hidden');
+    }
+
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='flashcards_data.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+    function importJSON(file){
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const obj = JSON.parse(reader.result);
+          if(!obj || !Array.isArray(obj.topics)) throw new Error('Invalid format');
+          data = obj; saveData(data); renderDashboard(); alert('Import successful!');
+        } catch(e){ alert('Import failed: '+e.message); }
+      };
+      reader.readAsText(file);
+    }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      renderDashboard();
+      document.getElementById('btn-new-topic').addEventListener('click', ()=>{
+        const name = prompt('New topic name:'); if(!name) return;
+        data.topics.push({id: uid(), name: name.trim(), cards: []});
+        saveData(data); renderDashboard();
+      });
+      document.getElementById('btn-back').addEventListener('click', renderDashboard);
+      document.getElementById('btn-delete-topic').addEventListener('click', ()=>{
+        if(!currentTopicId) return;
+        const topic = data.topics.find(t=>t.id===currentTopicId);
+        if(topic && confirm(`Delete topic "${topic.name}" and all its cards?`)){
+          data.topics = data.topics.filter(t=>t.id!==currentTopicId);
+          currentTopicId = null; saveData(data); renderDashboard();
+        }
+      });
+      document.getElementById('btn-add-card').addEventListener('click', ()=>{
+        const termEl = document.getElementById('new-card-term'); const term = termEl.value.trim(); if(!term) return;
+        const topic = data.topics.find(t=>t.id===currentTopicId);
+        topic.cards.push({id: uid(), term, status:'none'});
+        termEl.value=''; saveData(data); openTopic(topic.id);
+      });
+      document.getElementById('btn-start-session').addEventListener('click', startSession);
+      document.getElementById('btn-exit-session').addEventListener('click', ()=>{
+        const tid = session? session.topicId : currentTopicId; session=null; openTopic(tid);
+      });
+      document.getElementById('btn-summary-back').addEventListener('click', ()=>{
+        const tid = session? session.topicId : currentTopicId; session=null; openTopic(tid);
+      });
+      document.getElementById('btn-pass').addEventListener('click', ()=>handlePassFail('pass'));
+      document.getElementById('btn-fail').addEventListener('click', ()=>handlePassFail('fail'));
+      document.getElementById('btn-export').addEventListener('click', exportJSON);
+      document.getElementById('import-file').addEventListener('change', e=>{
+        const file = e.target.files?.[0]; if(file) importJSON(file); e.target.value='';
+      });
+    });
+  </script>
+</body>
+</html>
