@@ -1,3 +1,8 @@
+<!--
+  FlashLearn — Smart flashcard learning
+  Version: 1.0.0
+  Creator: Anatolij Semykin (https://github.com/Anatoogle)
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,433 +10,1758 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FlashLearn — Smart flashcard learning</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='18' font-size='18'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E">
   <style>
-    .card { @apply bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-sm; }
-    .btn  { @apply inline-flex items-center justify-center rounded-xl px-3 py-2 border text-sm font-medium transition; }
-    .btn-primary { @apply bg-blue-600 border-blue-600 text-white hover:bg-blue-500; }
-    .btn-ghost   { @apply border-slate-300 text-slate-700 hover:bg-slate-50; }
-    .btn-danger  { @apply bg-rose-600 border-rose-600 text-white hover:bg-rose-500; }
-    .btn-icon    { @apply p-2 rounded-lg border border-slate-300 hover:bg-slate-50; }
-    .badge       { @apply text-xs px-2 py-0.5 rounded-full border; }
-    .badge-green { @apply bg-emerald-50 text-emerald-700 border-emerald-200; }
-    .badge-gray  { @apply bg-slate-50 text-slate-700 border-slate-200; }
-    .badge-red   { @apply bg-rose-50 text-rose-700 border-rose-200; }
-    .input { @apply w-full bg-white border border-slate-300 rounded-xl px-3 py-2; }
-    .select { @apply w-full bg-white border border-slate-300 rounded-xl px-3 py-2; }
-    .textarea { @apply w-full bg-white border border-slate-300 rounded-xl px-3 py-2; }
-    .muted { @apply text-slate-500; }
-    .term { @apply text-lg font-semibold; }
-    .modal { @apply fixed inset-0 bg-black/30 flex items-center justify-center p-4; }
-    .modal-card { @apply w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 p-4; }
+    /* Drag-and-drop visual feedback */
+    .card.dragging {
+      opacity: 0.6;
+    }
+    .card.drag-over {
+      border: 2px dashed var(--primary);
+    }
+    :root{
+      --bg:#f8fafc;
+      --text:#0f172a;
+      --muted:#64748b;
+      --card-bg:#ffffff;
+      --card-border:#e2e8f0;
+      --primary:#2563eb;
+      --danger:#e11d48;
+      --green:#059669;
+      --red:#e11d48;
+      --badge-bg:#f1f5f9; --badge-text:#475569; --badge-border:#e2e8f0;
+    }
+    .dark{
+      --bg:#0b1220;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --card-bg:#0f172a;
+      --card-border:#223047;
+      --primary:#2563eb;
+      --danger:#e11d48;
+      --green:#34d399;
+      --red:#fb7185;
+      --badge-bg:#111827; --badge-text:#cbd5e1; --badge-border:#334155;
+    }
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);margin:0}
+    .container{max-width:1120px;margin:0 auto;padding:1rem}
+    .card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--card-border);border-radius:12px;padding:8px 12px;background:var(--card-bg);color:var(--text);cursor:pointer}
+    .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+    .btn-ghost{background:var(--card-bg);border-color:var(--card-border);color:var(--text)}
+    .badge{display:inline-block;border:1px solid var(--badge-border);border-radius:9999px;padding:2px 8px;font-size:12px;background:var(--badge-bg);color:var(--badge-text)}
+    .badge-green{background:rgba(16,185,129,0.12);color:var(--green);border-color:rgba(16,185,129,0.25)}
+    .badge-red{background:rgba(244,63,94,0.12);color:var(--red);border-color:rgba(244,63,94,0.25)}
+    .badge-blue{background:rgba(59,130,246,0.12);color:#2563eb;border-color:rgba(59,130,246,0.25)}
+    .input, .select, .textarea{width:100%;border:1px solid var(--card-border);border-radius:12px;padding:8px;background:var(--card-bg);color:var(--text)}
+    .codearea{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 14px; line-height: 1.45; min-height: 100px; width: 100%;
+      padding: 12px; border: 1px solid var(--card-border); border-radius: 12px;
+      background: var(--card-bg); color: var(--text); tab-size: 2; resize: vertical;
+    }
+    .muted{color:var(--muted)}
+    .hidden{display:none}
+    pre.answer{white-space:pre-wrap;border:1px solid var(--card-border);border-radius:12px;padding:10px;background:rgba(148,163,184,0.06);color:var(--text);font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .clamp-2{
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-clamp:2;
+    }
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:50}
+    .modal{max-width:720px;width:100%;margin:16px}
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
-  <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="text-blue-600">📘</div>
-        <h1 class="text-xl font-semibold">FlashLearn</h1>
-        <div class="ml-4 text-sm text-slate-500">Smart flashcard learning</div>
+<body>
+  <!-- Offline Banner -->
+  <div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#fee2e2;color:#991b1b;padding:14px 0;text-align:center;font-size:16px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <span>No internet connection. <b>Tailwind CSS</b> could not be loaded, so the app may look unstyled or be unusable. The app's data is still present, but the interface may not work until you are back online.</span>
+    <button id="offline-banner-close" style="margin-left:18px;background:none;border:none;color:#991b1b;font-size:20px;cursor:pointer;vertical-align:middle;">×</button>
+  </div>
+  <header class="border-b" style="background:var(--card-bg);border-bottom:1px solid var(--card-border);position:sticky;top:0;z-index:20">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="color:var(--primary)">📘</div>
+        <h1 style="margin:0;font-size:18px;font-weight:600">FlashLearn</h1>
+        <div style="margin-left:12px;font-size:14px" class="muted">Smart flashcard learning</div>
       </div>
-      <nav id="breadcrumb" class="text-sm text-slate-500">Dashboard</nav>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="btn-theme" class="btn" title="Toggle theme">🌙</button>
+        <nav id="breadcrumb" style="font-size:14px" class="muted">Dashboard</nav>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 py-6">
-    <!-- Dashboard -->
-    <section id="view-dashboard" class="hidden">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-2xl font-semibold">Your Learning Topics</h2>
-        <button id="btn-new-topic" class="btn btn-primary">＋ Create Topic</button>
+  <!-- Notes Panel Toggle and Panel -->
+  <div id="notes-toggle" style="position:fixed;top:90px;right:0;z-index:100;">
+    <button id="btn-notes-toggle" title="Show/Hide Notes" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px 0 0 12px;padding:8px 10px 8px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;outline:none;display:flex;align-items:center;gap:4px;">
+      <span id="notes-toggle-icon" style="font-size:18px;display:flex;align-items:center;">
+        <svg id="notes-icon-notepad" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display:inline;"><rect x="3" y="4" width="14" height="13" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="7" y="2" width="6" height="2" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="7" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="11" x2="13" y2="11" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="14" x2="11" y2="14" stroke="currentColor" stroke-width="1.2"/></svg>
+        <svg id="notes-icon-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" style="display:none;margin-left:2px;"><polyline points="7,6 13,10 7,14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </button>
+  </div>
+  <div id="notes-panel" style="position:fixed;top:90px;right:-320px;width:300px;height:340px;z-index:99;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px 0 0 12px;box-shadow:0 2px 16px rgba(0,0,0,0.10);transition:right 0.25s cubic-bezier(.4,2,.6,1);padding:16px 14px 12px 18px;display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-weight:600;font-size:16px;">Notes</span>
+      <button id="btn-notes-close" title="Close Notes" style="background:none;border:none;font-size:18px;cursor:pointer;">×</button>
+    </div>
+    <textarea id="notes-textarea" style="flex:1 1 auto;width:100%;height:220px;resize:vertical;border-radius:8px;border:1px solid var(--card-border);padding:8px;background:var(--card-bg);color:var(--text);font-size:14px;" placeholder="Write your notes here..."></textarea>
+  </div>
+
+  <main class="container" style="padding:24px 16px">
+    <!-- Dashboard (Groups) -->
+    <section id="view-dashboard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:28px;font-weight:700;margin:0">Your Groups</h2>
+          <p class="muted" style="margin:0 0 12px">Organize topics inside groups and track progress</p>
+        </div>
+        <script>
+        // File Options: New Project and Save...
+        document.addEventListener('DOMContentLoaded', function() {
+          var btnNewProject = document.getElementById('btn-new-project');
+          if (btnNewProject) {
+            btnNewProject.addEventListener('click', function() {
+              if (confirm('Start a new project? This will clear all current data.')) {
+                localStorage.removeItem('fc_data_v6');
+                location.reload();
+              }
+            });
+          }
+          var btnSaveAs = document.getElementById('btn-save-as');
+          if (btnSaveAs) {
+            btnSaveAs.addEventListener('click', function() {
+              try {
+                // Use the current in-memory data object
+                var exportObj = window.data || data;
+                var filename = prompt('Enter a filename for your export:', 'flashcards_data.json');
+                if (filename === null) return;
+                filename = filename.trim();
+                if (!filename) filename = 'flashcards_data.json';
+                if (!filename.endsWith('.json')) filename += '.json';
+                var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type:'application/json'});
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch (e) {
+                alert('Save failed: ' + e.message);
+              }
+            });
+          }
+        });
+        </script>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="btn-new-group" class="btn btn-primary">＋ Create Group</button>
+          <button id="btn-dashboard-more" class="btn" title="More file options" style="font-size:20px;line-height:1">⋯</button>
+        </div>
       </div>
-      <p class="muted mb-4">Organize your flashcards by topic and track your learning progress</p>
-      <div id="topic-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      <div id="group-grid" style="display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))"></div>
+    </section>
+
+    <!-- Group View (Topics list) -->
+    <section id="view-group" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">
+        <div>
+          <h2 id="group-title" style="font-size:24px;font-weight:700;margin:0">Group</h2>
+          <p id="group-desc" class="muted" style="margin:4px 0 0"></p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button id="btn-back-dashboard" class="btn btn-ghost" title="Back"><span aria-label="Back" style="font-size:18px">←</span></button>
+          <button id="btn-group-add-topic" class="btn" title="Add topic">＋</button>
+        </div>
+      </div>
+      <div id="topic-grid" style="display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))"></div>
     </section>
 
     <!-- Topic detail -->
     <section id="view-topic" class="hidden">
-      <div class="mb-4 flex items-center justify-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">
         <div>
-          <h2 id="topic-title" class="text-2xl font-semibold">Topic</h2>
-          <p id="topic-desc" class="muted"></p>
+          <h2 id="topic-title" style="font-size:24px;font-weight:700;margin:0">Topic</h2>
+          <p id="topic-desc" class="muted" style="margin:4px 0 0"></p>
         </div>
-        <div class="flex gap-2">
-          <button id="btn-topic-learn" class="btn btn-primary">▶ Start Learning</button>
-          <button id="btn-topic-books" class="btn btn-ghost" title="View cards">📖</button>
-          <button id="btn-topic-add" class="btn btn-ghost" title="Add card">＋</button>
-          <button id="btn-topic-delete" class="btn btn-danger">Delete Topic</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button id="btn-back-group" class="btn btn-ghost" title="Back"><span aria-label="Back" style="font-size:18px">←</span></button>
+          <button id="btn-topic-add" class="btn" title="Add card">＋</button>
+          <button id="btn-topic-learn" class="btn btn-primary">▶ Start</button>
         </div>
       </div>
 
-      <!-- Cards toolbar -->
-      <div class="card p-4 mb-4">
-        <div class="flex flex-col md:flex-row gap-3 items-center">
-          <input id="cards-search" class="input md:flex-1" placeholder="Search cards..."/>
-          <select id="cards-filter" class="select w-full md:w-48">
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <input id="cards-search" class="input" placeholder="Search cards..." style="flex:1 1 320px"/>
+          <select id="cards-filter" class="select" style="width:200px">
             <option value="all">All Cards</option>
-            <option value="passed">Passed Cards</option>
-            <option value="failed">Failed Cards</option>
+            <option value="passed">Passed</option>
+            <option value="failed">Failed</option>
+            <option value="none">New</option>
+            <option value="pro">Pro</option>
           </select>
-          <button id="btn-add-card" class="btn btn-primary">＋ Add Card</button>
+          <!-- Removed '+ Add Card' button here -->
         </div>
       </div>
 
-      <!-- Cards grid -->
-      <div id="cards-grid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      <div id="cards-grid" style="display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))"></div>
     </section>
 
     <!-- Session -->
     <section id="view-session" class="hidden">
-      <div class="card p-5">
-        <div class="flex items-center justify-between">
-          <h3 id="session-topic-title" class="text-xl font-semibold">Session</h3>
-          <button id="btn-exit-session" class="btn btn-ghost">⏹ End Session</button>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h3 id="session-topic-title" style="font-size:20px;font-weight:700;margin:0">Session</h3>
+          <button id="btn-exit-session" class="btn">⏹ End Session</button>
         </div>
 
-        <div id="session-config" class="mt-4">
-          <div class="grid sm:grid-cols-2 gap-3">
-            <label class="text-sm text-slate-600">Cards to Review
-              <select id="session-pile" class="select mt-1">
+        <!-- Config -->
+        <div id="session-config" style="margin-top:12px">
+          <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+            <label style="font-size:14px">Order
+              <select id="session-order" class="select" style="margin-top:6px">
+                <option value="random">Random</option>
+                <option value="inorder">In Order</option>
+              </select>
+            </label>
+            <label style="font-size:14px">Cards to Review
+              <select id="session-pile" class="select" style="margin-top:6px">
                 <option value="all">All</option>
                 <option value="passed">Passed</option>
                 <option value="failed">Failed</option>
+                <option value="none">New</option>
+                <option value="pro">Pro</option>
               </select>
             </label>
-            <label class="text-sm text-slate-600">How many cards?
-              <input id="session-count" type="number" min="1" value="5" class="input mt-1"/>
+            <label style="font-size:14px">How many cards?
+              <div style="position:relative">
+                <input id="session-count" type="text" inputmode="numeric" pattern="[0-9]*" value="5" class="input" style="margin-top:6px;padding-right:40px;" autocomplete="off" />
+                <button id="session-count-dropdown-btn" type="button" class="btn" style="position:absolute;right:4px;top:50%;transform:translateY(-40%);padding:2px 8px;font-size:16px;z-index:2;" tabindex="-1">▼</button>
+                <div id="session-count-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);z-index:10;">
+                  <div class="btn" data-val="1">1</div>
+                  <div class="btn" data-val="3">3</div>
+                  <div class="btn" data-val="5">5</div>
+                  <div class="btn" data-val="10">10</div>
+                  <div class="btn" data-val="15">15</div>
+                  <div class="btn" data-val="20">20</div>
+                  <div class="btn" data-val="25">25</div>
+                  <div class="btn" data-val="50">50</div>
+                  <div class="btn" data-val="100">100</div>
+                </div>
+              </div>
             </label>
           </div>
-          <div class="flex gap-2 mt-3">
-            <button id="btn-session-begin" class="btn btn-primary">Start Session ▶</button>
-            <div id="pile-stats" class="text-sm text-slate-500"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+            <button id="btn-session-begin" class="btn btn-primary">▶ Start</button>
+
           </div>
         </div>
 
-        <div id="session-container" class="hidden mt-6 space-y-4">
-          <div id="session-progress" class="text-sm text-slate-500"></div>
-          <div class="border border-slate-200 rounded-xl p-4 bg-white">
-            <div class="text-xs text-slate-500 mb-1">Term</div>
-            <div id="session-term" class="term"></div>
+        <!-- Active session -->
+        <div id="session-container" class="hidden" style="margin-top:16px">
+          <div id="session-progress" class="muted" style="font-size:14px;margin-bottom:8px"></div>
+          <div class="card" style="padding:12px">
+            <div class="muted" style="font-size:12px;margin-bottom:4px">Term</div>
+            <div id="session-term" style="font-size:18px;font-weight:700"></div>
           </div>
 
-          <label class="text-sm text-slate-600">Type your explanation</label>
-          <textarea id="session-input" rows="6" class="textarea"></textarea>
+          <label style="font-size:14px;margin-top:8px">Type your explanation</label>
+          <textarea id="session-input" class="codearea" spellcheck="false"></textarea>
 
-          <div class="flex gap-2">
-            <button id="btn-pass" class="btn btn-primary">Pass ✓</button>
-            <button id="btn-fail" class="btn btn-danger">Fail ✗</button>
+          <div id="submit-row" style="display:flex;gap:8px;margin-top:8px">
+            <button id="btn-submit-answer" class="btn">Submit</button>
           </div>
 
-          <div id="session-summary" class="hidden">
-            <h4 class="font-semibold">Session Summary</h4>
-            <p id="summary-text" class="text-slate-600"></p>
-            <button id="btn-summary-back" class="btn btn-ghost mt-2">Back to Topic</button>
+          <!-- Compare answers after submit -->
+          <div id="compare-wrap" class="hidden" style="margin-top:12px">
+            <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <span id="toggle-answer-label" class="muted" style="font-size:12px;">Your answer</span>
+                  <button id="btn-toggle-answer" class="btn btn-ghost" style="font-size:12px;padding:2px 8px;">Show Term</button>
+                </div>
+                <pre id="user-answer" class="answer"></pre>
+                <pre id="user-term" class="answer" style="display:none"></pre>
+              </div>
+              <div>
+                <div class="muted" style="font-size:12px;margin-bottom:6px">Correct answer</div>
+                <pre id="correct-answer" class="answer"></pre>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button id="btn-pass" class="btn btn-primary">Pass ✓</button>
+              <button id="btn-fail" class="btn btn-danger">Fail ✗</button>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Session Summary (separate view) -->
+    <section id="view-session-summary" class="hidden">
+      <div class="card">
+  <h3 style="margin:0 0 8px;font-weight:700">Session Summary</h3>
+  <p id="summary-text" class="muted"></p>
+  <div style="height:16px"></div>
+  <button id="btn-finish-summary" class="btn btn-primary">Finish</button>
+      </div>
+    </section>
   </main>
 
-  <footer class="max-w-6xl mx-auto px-4 pb-10">
-    <div class="flex flex-wrap items-center gap-2 text-slate-500">
-      <button id="btn-export" class="btn btn-ghost">Export JSON</button>
-      <label class="btn btn-ghost cursor-pointer">
-        Import JSON
-        <input id="import-file" type="file" accept="application/json" hidden/>
+  <!-- Add/Edit Card Modal -->
+  <div id="card-modal-overlay" class="modal-overlay hidden">
+    <div class="modal card">
+      <h3 id="card-modal-title" style="margin:0 0 8px;font-weight:700">Add Card</h3>
+      <label style="display:block;margin-top:6px">Term
+  <textarea id="card-term" class="codearea" spellcheck="false" placeholder="e.g., Polymorphism"></textarea>
       </label>
-    </div>
-  </footer>
-
-  <!-- Modals -->
-  <div id="modal-card" class="modal hidden">
-    <div class="modal-card">
-      <div class="flex items-center justify-between mb-2">
-        <h3 id="modal-card-title" class="text-lg font-semibold">Add New Card</h3>
-        <button id="modal-card-close" class="btn-icon">✕</button>
-      </div>
-      <p class="text-sm text-slate-600 mb-3">Adding to: <span id="modal-card-topic" class="font-medium"></span></p>
-      <label class="text-sm text-slate-600">Term *</label>
-      <input id="modal-card-term" class="input mt-1" placeholder="e.g. Polymorphism"/>
-      <label class="text-sm text-slate-600 mt-3 block">Explanation *</label>
-      <textarea id="modal-card-expl" class="textarea mt-1" rows="6" placeholder="Write a clear explanation of this term..."></textarea>
-      <div class="flex items-center justify-between mt-3">
-        <button id="modal-card-cancel" class="btn btn-ghost">Cancel</button>
-        <button id="modal-card-save" class="btn btn-primary">＋ Add Card</button>
+      <label style="display:block;margin-top:10px">Explanation
+        <textarea id="card-expl" class="codearea" spellcheck="false" placeholder="Write the correct explanation (supports multiple lines, Tab indent)..."></textarea>
+      </label>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button id="btn-card-cancel" class="btn">Cancel</button>
+        <button id="btn-card-save" class="btn btn-primary">Save</button>
       </div>
     </div>
   </div>
 
-  <div id="modal-session" class="modal hidden">
-    <div class="modal-card">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-lg font-semibold">Start Learning Session</h3>
-        <button id="modal-session-close" class="btn-icon">✕</button>
-      </div>
-      <p class="text-sm text-slate-600">Configure your learning session below</p>
-      <label class="text-sm text-slate-600 mt-3 block">Cards to Review</label>
-      <select id="modal-session-pile" class="select mt-1">
-        <option value="all">All Cards</option>
-        <option value="passed">Passed Cards</option>
-        <option value="failed">Failed Cards</option>
-      </select>
-      <label class="text-sm text-slate-600 mt-3 block">How many cards?</label>
-      <input id="modal-session-count" type="number" min="1" value="5" class="input mt-1"/>
-      <div id="modal-session-stats" class="text-sm text-slate-500 mt-2"></div>
-      <div class="flex items-center justify-between mt-4">
-        <button class="btn btn-ghost" id="modal-session-cancel">Cancel</button>
-        <button class="btn btn-primary" id="modal-session-start">Start Session</button>
+  <!-- Add/Edit Group Modal -->
+  <div id="group-modal-overlay" class="modal-overlay hidden">
+    <div class="modal card">
+      <h3 id="group-modal-title" style="margin:0 0 8px;font-weight:700">Add Group</h3>
+      <label style="display:block;margin-top:6px">Group Name
+        <input id="group-name" class="input" placeholder="e.g., Biology" maxlength="50"/>
+      </label>
+      <label style="display:block;margin-top:10px">Description
+        <textarea id="group-desc-input" class="textarea" spellcheck="false" placeholder="Short description (optional)" maxlength="100"></textarea>
+      </label>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button id="btn-group-cancel" class="btn">Cancel</button>
+        <button id="btn-group-save" class="btn btn-primary">Save</button>
+        <button id="btn-group-delete-modal" class="btn btn-danger" style="display:none">🗑︎</button>
       </div>
     </div>
   </div>
 
-  <script>
-    const KEY = "fc_data_v2";
-    const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
-    function loadData(){ try{ const raw=localStorage.getItem(KEY); return raw? JSON.parse(raw): {topics:[]}; }catch(e){return {topics:[]};}}
-    function saveData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
-    let data = loadData();
-    let currentTopicId = null;
-    let session = null;
-    let editingCardId = null;
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-    function setView(id){ ['#view-dashboard','#view-topic','#view-session'].forEach(sel=>document.querySelector(sel).classList.add('hidden')); document.querySelector(id).classList.remove('hidden'); }
-    function setBreadcrumb(parts){ document.getElementById('breadcrumb').textContent = parts.join(' / '); }
-    function topicById(id){ return data.topics.find(t=>t.id===id); }
-    function computeStats(topic){ let p=0,f=0; for(const c of topic.cards){ if(c.status==='passed') p++; else if(c.status==='failed') f++; } return {total: topic.cards.length, passed:p, failed:f, pct: topic.cards.length? Math.round((p/topic.cards.length)*100): 0}; }
+  <!-- Add/Edit Topic Modal -->
+  <div id="topic-modal-overlay" class="modal-overlay hidden">
+    <div class="modal card">
+      <h3 id="topic-modal-title" style="margin:0 0 8px;font-weight:700">Add Topic</h3>
+      <label style="display:block;margin-top:6px">Topic Name
+        <input id="topic-name" class="input" placeholder="e.g., Cell Structure" maxlength="50"/>
+      </label>
+      <label style="display:block;margin-top:10px">Description
+        <textarea id="topic-desc-input" class="textarea" spellcheck="false" placeholder="Short description (optional)" maxlength="100"></textarea>
+      </label>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+  <button id="btn-topic-cancel" class="btn">Cancel</button>
+  <button id="btn-topic-save" class="btn btn-primary">Save</button>
+  <button id="btn-topic-move" class="btn" style="display:none" title="Move to Group">⇄</button>
+  <button id="btn-topic-delete-modal" class="btn btn-danger" style="display:none">🗑</button>
+<!-- Move Topic Modal (always outside topic modal, with higher z-index) -->
+<div id="move-topic-modal-overlay" class="modal-overlay hidden" style="z-index:1001; pointer-events:auto;">
+  <div class="modal card">
+    <h3 style="margin:0 0 8px;font-weight:700">Move Topic to Group</h3>
+    <label style="display:block;margin-top:6px">Select Group
+      <select id="move-topic-group-select" class="select"></select>
+    </label>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button id="btn-move-topic-cancel" class="btn">Cancel</button>
+      <button id="btn-move-topic-confirm" class="btn btn-primary">Move</button>
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+  </div>
 
-    function renderDashboard(){
-      setView('#view-dashboard'); setBreadcrumb(['Dashboard']);
-      const grid = document.getElementById('topic-grid'); grid.innerHTML='';
-      if (!data.topics.length){
-        const empty = document.createElement('div'); empty.className='card p-6 text-center text-slate-600'; empty.textContent='No topics yet. Click “Create Topic”.'; grid.appendChild(empty); return;
+  <!-- Move Card Modal (for moving a card to another topic in the same group) -->
+  <div id="move-card-modal-overlay" class="modal-overlay hidden" style="z-index:1002; pointer-events:auto;">
+    <div class="modal card">
+      <h3 style="margin:0 0 8px;font-weight:700">Move Card to Topic</h3>
+      <label style="display:block;margin-top:6px">Select Topic
+        <select id="move-card-topic-select" class="select"></select>
+      </label>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button id="btn-move-card-cancel" class="btn">Cancel</button>
+        <button id="btn-move-card-confirm" class="btn btn-primary">Move</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard More Modal -->
+  <div id="dashboard-more-modal-overlay" class="modal-overlay hidden" style="z-index:1003; pointer-events:auto;">
+    <div class="modal card" style="max-width:540px; display:flex; flex-direction:row; min-height:350px; background:none; box-shadow:none; border:none; padding:0;">
+      <!-- Left rail (tabs) -->
+      <div id="dashboard-more-tabs" style="display:flex;flex-direction:column;gap:0;min-width:110px;max-width:120px;margin-right:0;background:var(--card-bg);border-radius:16px 0 0 16px;border-right:1px solid var(--card-border);padding:18px 0;">
+  <button class="dashboard-tab-btn" id="tab-file">File</button>
+  <button class="dashboard-tab-btn" id="tab-settings">Settings</button>
+  <button class="dashboard-tab-btn" id="tab-about">About</button>
+    <style>
+      .dashboard-tab-btn {
+        background: none;
+        border: none;
+        color: var(--text);
+        font: inherit;
+        padding: 8px 0;
+        margin: 0 0 2px 0;
+        cursor: pointer;
+        border-radius: 0;
+        outline: none;
+        transition: color 0.2s;
       }
-      for(const t of data.topics){
-        const s = computeStats(t);
-        const el = document.createElement('div'); el.className='card p-4';
-        el.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-blue-600">📘</span>
-              <h3 class="text-lg font-semibold">${t.name}</h3>
+      .dashboard-tab-btn.btn-primary {
+        color: #fff;
+        background: var(--primary);
+        border-radius: 8px;
+      }
+    </style>
+      </div>
+      <!-- Right panel (tab content) -->
+      <div id="dashboard-more-content" style="flex:1 1 0;min-width:0;background:#f6f9ff;border-radius:0 16px 16px 0;min-height:320px;padding:28px 28px 18px 28px;display:flex;flex-direction:column;justify-content:stretch;position:relative;">
+        <!-- File Tab -->
+        <div id="dashboard-more-file" class="dashboard-more-tab-panel" style="flex:1 1 auto;display:block;">
+          <h3 style="margin:0 0 8px;font-weight:700">File Options</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0 8px">
+            <button id="btn-new-project" class="btn">New Project</button>
+            <label class="btn" style="cursor:pointer;margin:0">
+              Open…
+              <input id="import-file" type="file" accept=".json,application/json" style="display:none"/>
+            </label>
+            <label class="btn" style="cursor:pointer;margin:0">
+              Add...
+              <input id="add-json-file" type="file" accept=".json,application/json" style="display:none"/>
+            </label>
+            <button id="btn-save-as" class="btn">Save...</button>
+          </div>
+        </div>
+        <!-- Settings Tab -->
+        <div id="dashboard-more-settings" class="dashboard-more-tab-panel" style="display:none;flex:1 1 auto;">
+          <h3 style="margin:0 0 8px;font-weight:700">Settings</h3>
+          <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0 8px">
+            <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
+              <span style="position:relative;display:inline-block">
+                Pro Status
+                <span style="margin-left:4px;cursor:pointer;color:#2563eb;font-size:15px;vertical-align:middle;" tabindex="0" aria-label="What is Pro Status?" id="pro-status-info">&#9432;
+                  <span id="pro-status-tooltip" style="display:none;position:absolute;left:20px;top:22px;z-index:10;background:#fff;color:#222;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.08);min-width:220px;max-width:320px;white-space:normal;">
+                    <strong>Pro Status</strong> is the number of consecutive times you must pass a card for it to be considered "Pro" (mastered).<br><br>
+                    When a card reaches this threshold, it gets the "Pro" label and is considered fully learned.
+                  </span>
+                </span>
+              </span>
+              <input id="pro-status-input" type="number" min="1" max="20" step="1" style="width:60px;text-align:center;border-radius:8px;border:1px solid var(--card-border);padding:4px 6px;background:var(--card-bg);color:var(--text);transition:background 0.2s,color 0.2s" />
             </div>
-            <span class="badge ${s.pct===100?'badge-green':'badge-gray'}">${s.pct}% passed</span>
           </div>
-          <p class="mt-1 text-sm text-slate-600">${t.desc||''}</p>
-          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
-            <div class="card p-2"><div class="text-xs text-slate-500">Total</div><div class="font-semibold">${s.total}</div></div>
-            <div class="card p-2"><div class="text-xs text-slate-500">Passed</div><div class="font-semibold text-emerald-600">${s.passed}</div></div>
-            <div class="card p-2"><div class="text-xs text-slate-500">Failed</div><div class="font-semibold text-rose-600">${s.failed}</div></div>
+        </div>
+        <!-- About Tab -->
+        <div id="dashboard-more-about" class="dashboard-more-tab-panel" style="display:none;flex:1 1 auto;">
+          <h3 style="margin:0 0 8px;font-weight:700">About</h3>
+          <div style="margin:16px 0 8px; font-size:15px; line-height:1.6">
+            <div><strong>App:</strong> FlashLearn</div>
+            <div><strong>Version:</strong> <span id="about-version">1.0.0</span></div>
+            <div><strong>Creator:</strong> Anatolij Semykin</div>
+            <div><strong>GitHub:</strong> <a href="https://github.com/Anatoogle" target="_blank" style="color:#2563eb;text-decoration:underline">Anatoogle</a></div>
+            <div style="margin-top:12px; font-size:14px; color:var(--muted)">
+              This app is provided under the MIT License. You are free to use, modify, and distribute it. No warranty is provided.<br><br>
+            </div>
           </div>
-          <div class="flex gap-2 mt-3">
-            <button class="btn btn-primary w-full" data-action="learn">▶ Start Learning</button>
-            <button class="btn btn-ghost" title="View cards" data-action="books">📖</button>
-            <button class="btn btn-ghost" title="Add card" data-action="add">＋</button>
-          </div>`;
-        el.querySelector('[data-action="learn"]').addEventListener('click', ()=>{ openTopic(t.id); openSessionModal(); });
-        el.querySelector('[data-action="books"]').addEventListener('click', ()=>openTopic(t.id));
-        el.querySelector('[data-action="add"]').addEventListener('click', ()=>{ openTopic(t.id); openCardModal(); });
-        grid.appendChild(el);
-      }
+        </div>
+        <!-- Modal footer -->
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:auto;">
+          <button id="btn-dashboard-more-close" class="btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <style>
+    /* ...existing code... */
+    #dashboard-more-content {
+      background: #f6f9ff;
+      border-radius: 0 16px 16px 0;
+      min-height: 320px;
+      padding: 28px 28px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: stretch;
+      position: relative;
     }
-
-    function openTopic(id){
-      currentTopicId = id;
-      const t = topicById(id);
-      if(!t){ renderDashboard(); return; }
-      setView('#view-topic'); setBreadcrumb(['Dashboard', t.name]);
-      document.getElementById('topic-title').textContent = t.name;
-      document.getElementById('topic-desc').textContent = t.desc || '';
-      document.getElementById('btn-topic-learn').onclick = ()=>openSessionModal();
-      document.getElementById('btn-topic-add').onclick = ()=>openCardModal();
-      document.getElementById('btn-topic-delete').onclick = ()=>{
-        if(confirm(\`Delete topic "\${t.name}" and all its cards?\`)){
-          data.topics = data.topics.filter(x=>x.id!==t.id); saveData(data); renderDashboard();
-        }
+    .dark #dashboard-more-content {
+      background: #18213a !important;
+    }
+    #dashboard-more-content > .dashboard-more-tab-panel {
+      flex: 1 1 auto;
+    }
+    /* ...existing code... */
+  </style>
+  <script>
+    // --- Offline Banner Logic ---
+    (function(){
+      const banner = document.getElementById('offline-banner');
+      const closeBtn = document.getElementById('offline-banner-close');
+      function showBanner() { if (banner) banner.style.display = 'block'; }
+      function hideBanner() { if (banner) banner.style.display = 'none'; }
+      if (!navigator.onLine) showBanner();
+      window.addEventListener('offline', showBanner);
+      window.addEventListener('online', hideBanner);
+      if (closeBtn) closeBtn.onclick = function() {
+        hideBanner();
       };
-      document.getElementById('cards-search').value='';
-      document.getElementById('cards-filter').value='all';
-      renderCardsGrid();
-    }
-
-    function renderCardsGrid(){
-      const t = topicById(currentTopicId);
-      const query = document.getElementById('cards-search').value.trim().toLowerCase();
-      const filter = document.getElementById('cards-filter').value;
-      const grid = document.getElementById('cards-grid'); grid.innerHTML='';
-      let cards = [...t.cards];
-      if (filter==='passed') cards = cards.filter(c=>c.status==='passed');
-      if (filter==='failed') cards = cards.filter(c=>c.status==='failed');
-      if (query) cards = cards.filter(c => c.term.toLowerCase().includes(query) || (c.expl||'').toLowerCase().includes(query));
-      if (!cards.length){
-        const empty = document.createElement('div'); empty.className='card p-6 text-center text-slate-600'; empty.textContent='No cards match the current filter.'; grid.appendChild(empty); return;
-      }
-      for(const c of cards){
-        const card = document.createElement('div'); card.className='card p-4';
-        const badgeClass = c.status==='passed' ? 'badge-green' : (c.status==='failed' ? 'badge-red' : 'badge-gray');
-        const badgeText = c.status ? c.status[0].toUpperCase()+c.status.slice(1) : 'None';
-        card.innerHTML = `
-          <div class="flex items-start justify-between">
-            <h4 class="term">${c.term}</h4>
-            <span class="badge ${badgeClass}">${badgeText}</span>
-          </div>
-          <p class="mt-2 text-sm text-slate-700">${(c.expl||'').length>220 ? (c.expl.slice(0,220) + '…') : (c.expl||'')}</p>
-          <div class="mt-3">
-            <select class="select w-full" data-id="${c.id}">
-              <option value="none" ${c.status==='none'?'selected':''}>None</option>
-              <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
-              <option value="failed" ${c.status==='failed'?'selected':''}>Failed</option>
-            </select>
-          </div>
-          <div class="flex gap-2 mt-3">
-            <button class="btn btn-ghost" data-edit="${c.id}">✎ Edit</button>
-            <button class="btn btn-danger ml-auto" data-del="${c.id}">Delete</button>
-          </div>`;
-        card.querySelector('select').addEventListener('change', (e)=>{
-          const v = e.target.value;
-          const cardObj = t.cards.find(x=>x.id===c.id);
-          cardObj.status = v; saveData(data); renderCardsGrid();
+    })();
+    // --- Notes Panel Logic ---
+    (function(){
+      const toggleBtn = document.getElementById('btn-notes-toggle');
+      const notesPanel = document.getElementById('notes-panel');
+      const notesIcon = document.getElementById('notes-toggle-icon');
+      const closeBtn = document.getElementById('btn-notes-close');
+      const notesKey = 'fl_notes_v1';
+      const notesTextarea = document.getElementById('notes-textarea');
+      // Load saved notes
+      if (notesTextarea) {
+        notesTextarea.value = localStorage.getItem(notesKey) || '';
+        notesTextarea.addEventListener('input', function(){
+          localStorage.setItem(notesKey, notesTextarea.value);
         });
-        card.querySelector('[data-edit]').addEventListener('click', ()=>openCardModal(c.id));
-        card.querySelector('[data-del]').addEventListener('click', ()=>{
-          if(confirm(\`Delete card "\${c.term}"?\`)){
-            t.cards = t.cards.filter(x=>x.id!==c.id); saveData(data); renderCardsGrid();
+      }
+      function showNotes() {
+        notesPanel.style.right = '0px';
+        document.getElementById('notes-icon-notepad').style.display = 'none';
+        document.getElementById('notes-icon-chevron').style.display = 'inline';
+      }
+      function hideNotes() {
+        notesPanel.style.right = '-320px';
+        document.getElementById('notes-icon-notepad').style.display = 'inline';
+        document.getElementById('notes-icon-chevron').style.display = 'none';
+      }
+      let open = false;
+      if (toggleBtn && notesPanel && notesIcon) {
+        toggleBtn.onclick = function(){
+          open = !open;
+          if (open) showNotes(); else hideNotes();
+        };
+      }
+      if (closeBtn) {
+        closeBtn.onclick = function(){ open = false; hideNotes(); };
+      }
+    })();
+        // Tooltip for About label
+        (function(){
+          const trigger = document.getElementById('about-label-tooltip-trigger');
+          const tip = document.getElementById('about-label-tooltip');
+          if(trigger && tip){
+            function show(){ tip.style.display='block'; }
+            function hide(){ tip.style.display='none'; }
+            trigger.addEventListener('mouseenter', show);
+            trigger.addEventListener('mouseleave', hide);
+            trigger.addEventListener('focus', show);
+            trigger.addEventListener('blur', hide);
+            // Set version dynamically if available
+            const v = document.getElementById('about-tooltip-version');
+            if(v && window.data && window.data.meta && window.data.meta.version) v.textContent = window.data.meta.version;
+          }
+        })();
+    (function(){
+        // Tooltip for Pro Status info
+        (function(){
+          const info = document.getElementById('pro-status-info');
+          const tip = document.getElementById('pro-status-tooltip');
+          if(info && tip){
+            function show(){ tip.style.display='block'; }
+            function hide(){ tip.style.display='none'; }
+            info.addEventListener('mouseenter', show);
+            info.addEventListener('mouseleave', hide);
+            info.addEventListener('focus', show);
+            info.addEventListener('blur', hide);
+          }
+        })();
+        // Save proStatus to settings and localStorage whenever changed in modal
+        const proInput = document.getElementById('pro-status-input');
+        if (proInput) {
+          proInput.addEventListener('input', function() {
+            let val = parseInt(this.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            if (!data.settings) data.settings = {};
+            data.settings.proStatus = val;
+            saveData(data);
+          });
+        }
+      try {
+        // -------- Theme --------
+        const THEME_KEY = "fl_theme";
+        const themeBtn = document.getElementById("btn-theme");
+        function setTheme(t){
+          document.documentElement.classList.toggle('dark', t==='dark');
+          localStorage.setItem(THEME_KEY, t);
+          themeBtn.textContent = t==='dark' ? '☀️' : '🌙';
+          themeBtn.title = t==='dark' ? 'Switch to light mode' : 'Switch to dark mode';
+          // Update Pro Status input color mode
+          const proInput = document.getElementById('pro-status-input');
+          if (proInput) {
+            // Force reflow to update CSS vars
+            proInput.style.background = getComputedStyle(document.documentElement).getPropertyValue('--card-bg');
+            proInput.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text');
+            proInput.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--card-border');
+          }
+        }
+        function initTheme(){
+          let t = localStorage.getItem(THEME_KEY);
+          if(!t){ t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+          setTheme(t);
+        }
+        themeBtn.addEventListener('click', ()=>{ const t = document.documentElement.classList.contains('dark') ? 'light' : 'dark'; setTheme(t); });
+        initTheme();
+
+        // -------- Custom dropdown for session count --------
+        (function(){
+          const input = document.getElementById('session-count');
+          const btn = document.getElementById('session-count-dropdown-btn');
+          const dropdown = document.getElementById('session-count-dropdown');
+          if (!input || !btn || !dropdown) return;
+          function show(){ dropdown.style.display = 'block'; }
+          function hide(){ dropdown.style.display = 'none'; }
+          btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            if (dropdown.style.display === 'block') hide(); else show();
+          });
+          input.addEventListener('focus', hide);
+          input.addEventListener('blur', function(){ setTimeout(hide, 150); });
+          dropdown.querySelectorAll('.btn').forEach(function(opt){
+            opt.addEventListener('mousedown', function(e){
+              e.preventDefault();
+              input.value = opt.getAttribute('data-val');
+              hide();
+              input.dispatchEvent(new Event('input', {bubbles:true}));
+            });
+          });
+          // Prevent non-numeric input
+          input.addEventListener('input', function(){
+            this.value = this.value.replace(/[^0-9]/g, '');
+          });
+          // Hide dropdown on click outside
+          document.addEventListener('mousedown', function(e){
+            if (!dropdown.contains(e.target) && e.target !== btn) hide();
+          });
+        })();
+        // -------- Code-like textarea enhancer --------
+        function enhanceCodeArea(ta){
+          if(!ta || ta.dataset.enhanced) return;
+          ta.dataset.enhanced = "1";
+          const INDENT = "  "; // 2 spaces
+          function withSel(fn){
+            const start = ta.selectionStart, end = ta.selectionEnd, val = ta.value;
+            const out = fn(val, start, end);
+            if(!out) return;
+            ta.value = out.value;
+            ta.selectionStart = out.selStart;
+            ta.selectionEnd = out.selEnd;
+          }
+          ta.addEventListener("keydown", (e)=>{
+            if(e.key === "Tab"){
+              const start = ta.selectionStart, end = ta.selectionEnd;
+              e.preventDefault();
+              withSel((val,start,end)=>{
+                // Indent only the selected/current lines, not the next line
+                const ls = val.lastIndexOf("\n", start-1)+1;
+                // Find the end of the last selected line, not the next line
+                let le = val.indexOf("\n", end);
+                if (le === -1) le = val.length; // If no more newlines, go to end
+                else le = le; // Do not add +1, so we don't include the next line
+                const lines = val.slice(ls,le).split("\n");
+                let delta = 0, text;
+                if(e.shiftKey){
+                  text = lines.map(l=>{
+                    if(l.startsWith(INDENT)){ delta--; return l.slice(INDENT.length); }
+                    if(l.startsWith("\t")){ delta--; return l.slice(1); }
+                    return l;
+                  }).join("\n");
+                } else {
+                  text = lines.map(l=>{ delta++; return INDENT+l; }).join("\n");
+                }
+                const value = val.slice(0,ls)+text+val.slice(le);
+                // If no selection, move cursor after indent on that line
+                if (start === end) {
+                  const caret = start + INDENT.length;
+                  return {value, selStart: caret, selEnd: caret};
+                } else {
+                  const selStart = e.shiftKey ? Math.max(ls, start + (start===ls?0:(delta<0?delta*INDENT.length:0))) : start + INDENT.length;
+                  const selEnd = end + (delta*INDENT.length);
+                  return {value, selStart, selEnd};
+                }
+              });
+            } else if (e.key === "Enter"){
+              e.preventDefault();
+              withSel((val,start,end)=>{
+                const ls = val.lastIndexOf("\n", start-1)+1;
+                const cur = val.slice(ls,start);
+                const m = cur.match(/^[\t ]+/);
+                const indent = m? m[0] : "";
+                const insert = "\n"+indent;
+                const value = val.slice(0,start)+insert+val.slice(end);
+                const caret = start+insert.length;
+                return {value, selStart:caret, selEnd:caret};
+              });
+            }
+          });
+        }
+
+        // -------- Data & Migration --------
+        const KEY = "fc_data_v6"; // keep same key
+        const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
+        function loadData(){ try{ const raw=localStorage.getItem(KEY); return raw? JSON.parse(raw): {groups:[]}; }catch(e){return {groups:[]};}}
+        function saveData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+        function migrateIfNeeded(d){
+          if(Array.isArray(d.topics)){ // old shape -> new shape
+            const g = { id: uid(), name: "My First Group", desc: "", topics: d.topics };
+            delete d.topics;
+            if(!Array.isArray(d.groups)) d.groups = [];
+            d.groups.push(g);
+          }
+          if(!Array.isArray(d.groups)) d.groups = [];
+          return d;
+        }
+  let data = migrateIfNeeded(loadData()); saveData(data);
+  window.data = data;
+
+        let currentGroupId = null;
+        let currentTopicId = null;
+        let session = null;
+
+        const $ = s => document.querySelector(s);
+
+        function setView(id){
+          ["#view-dashboard","#view-group","#view-topic","#view-session","#view-session-summary"].forEach(sel=>{ const el = document.querySelector(sel); if(el) el.classList.add("hidden"); });
+          const el = document.querySelector(id); if(el) el.classList.remove("hidden");
+        }
+        function setBreadcrumb(parts) {
+          const b = $("#breadcrumb");
+          if (!b) return;
+          b.innerHTML = '';
+          parts.forEach((part, idx) => {
+            const span = document.createElement('span');
+            span.textContent = part;
+            span.style.cursor = 'pointer';
+            span.style.textDecoration = 'underline';
+            span.style.color = 'var(--primary)';
+            span.style.marginRight = '4px';
+            span.onclick = function() {
+              // Dashboard
+              if (idx === 0) {
+                renderDashboard();
+              } else if (idx === 1 && typeof currentGroupId === 'string') {
+                openGroup(currentGroupId);
+              } else if (idx === 2 && typeof currentGroupId === 'string' && typeof currentTopicId === 'string') {
+                openTopic(currentGroupId, currentTopicId);
+              } else if (idx === 3 && document.querySelector('#view-session')) {
+                openSessionConfig();
+              }
+            };
+            b.appendChild(span);
+            if (idx < parts.length - 1) {
+              const sep = document.createElement('span');
+              sep.textContent = '/';
+              sep.style.margin = '0 4px';
+              sep.style.color = 'var(--muted)';
+              b.appendChild(sep);
+            }
+          });
+        }
+        const groupById = id => data.groups.find(g=>g.id===id);
+        function topicById(gid, tid){
+          const g = groupById(gid); if(!g) return null;
+          return g.topics.find(t=>t.id===tid);
+        }
+        function computeTopicStats(topic){
+          let p=0,f=0,pro=0;
+          for(const c of topic.cards||[]){
+            if(c.status==="pro") pro++;
+            else if(c.status==="passed") p++;
+            else if(c.status==="failed") f++;
+          }
+          return {total: (topic.cards||[]).length, pro, passed:p, failed:f, pct: (topic.cards||[]).length? Math.round(((p+pro)/(topic.cards||[]).length)*100): 0};
+        }
+        function computeGroupStats(group){
+          let topics = group.topics||[];
+          let total=0, pro=0, passed=0, failed=0;
+          for(const t of topics){
+            const s = computeTopicStats(t);
+            total += s.total; pro += s.pro; passed += s.passed; failed += s.failed;
+          }
+          const pct = total? Math.round(((passed+pro)/total)*100):0;
+          return {topicsCount: topics.length, total, pro, passed, failed, pct};
+        }
+
+        // ----- Dashboard (Groups) -----
+        function renderDashboard(){
+          setView("#view-dashboard"); setBreadcrumb(["Dashboard"]);
+          const grid = $("#group-grid"); grid.innerHTML="";
+          if (!data.groups.length){
+            const empty = document.createElement("div"); empty.className="card"; empty.style.textAlign="center"; empty.classList.add('muted');
+            empty.textContent="No groups yet. Click “Create Group”."; grid.appendChild(empty); return;
+          }
+          for(const g of data.groups){
+            const s = computeGroupStats(g);
+            const el = document.createElement("div"); el.className="card";
+            el.style.display = 'flex';
+            el.style.flexDirection = 'column';
+            el.style.justifyContent = 'space-between';
+            el.setAttribute('draggable', 'true');
+            el.setAttribute('data-group-id', g.id);
+            el.style.cursor = 'grab';
+            // Drag events
+            el.addEventListener('dragstart', function(e){
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', g.id);
+              el.classList.add('dragging');
+            });
+            el.addEventListener('dragend', function(e){
+              el.classList.remove('dragging');
+            });
+            el.addEventListener('dragover', function(e){
+              e.preventDefault();
+              el.classList.add('drag-over');
+            });
+            el.addEventListener('dragleave', function(e){
+              el.classList.remove('drag-over');
+            });
+            el.addEventListener('drop', function(e){
+              e.preventDefault();
+              el.classList.remove('drag-over');
+              const draggedId = e.dataTransfer.getData('text/plain');
+              if (draggedId === g.id) return;
+              const fromIdx = data.groups.findIndex(x=>x.id===draggedId);
+              const toIdx = data.groups.findIndex(x=>x.id===g.id);
+              if (fromIdx === -1 || toIdx === -1) return;
+              const [draggedGroup] = data.groups.splice(fromIdx, 1);
+              data.groups.splice(toIdx, 0, draggedGroup);
+              saveData(data);
+              renderDashboard();
+            });
+            // ...existing group rendering logic...
+            // Limit group name to max 50 characters
+            let groupName = g.name || "";
+            if (groupName.length > 50) groupName = groupName.slice(0, 50) + "…";
+            el.innerHTML = `
+              <div style="flex:1 1 auto;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div style="display:flex;align-items:flex-start;gap:8px">
+                    <span style="color:var(--primary);margin-top:2px;line-height:1.2;">🗂️</span>
+                    <h3 class="clamp-2" style="margin:0;font-size:18px;font-weight:700;max-height:48px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;word-break:break-all;">${escapeHtml(groupName)}</h3>
+                  </div>
+                  <span class="badge ${s.pct===100?'badge-green':'badge-gray'}">${s.pct}% passed</span>
+                </div>
+                <p class="muted clamp-2" style="margin:6px 0 0;font-size:14px;max-height:40px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;">${g.desc ? escapeHtml(g.desc) : "<br><br>"}</p>
+              </div>
+              <div style="margin-top:auto;">
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;text-align:center">
+                  <div class="card"><div class="muted" style="font-size:12px">Topics</div><div style="font-weight:700">${s.topicsCount}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Cards</div><div style="font-weight:700">${s.total}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Pro</div><div style="font-weight:700;color:#2563eb">${s.pro}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Passed</div><div style="font-weight:700;color:var(--green)">${s.passed}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Failed</div><div style="font-weight:700;color:var(--red)">${s.failed}</div></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px">
+                  <button class="btn btn-primary" style="flex:1" data-open>Open</button>
+                  <button class="btn" style="" data-edit title="Edit group name and description">⚙️</button>
+                </div>
+              </div>`;
+            el.querySelector('[data-open]').addEventListener("click", ()=>openGroup(g.id));
+            el.querySelector('[data-edit]').addEventListener("click", ()=>{
+              openGroupModal(g.id);
+            });
+            grid.appendChild(el);
+          }
+        }
+
+        // Create Group
+        // ----- Group Modal Logic -----
+        const groupModalOverlay = document.getElementById("group-modal-overlay");
+        const groupModalTitle = document.getElementById("group-modal-title");
+        const inputGroupName = document.getElementById("group-name");
+        const inputGroupDesc = document.getElementById("group-desc-input");
+        const btnGroupSave = document.getElementById("btn-group-save");
+        const btnGroupCancel = document.getElementById("btn-group-cancel");
+        let editingGroupId = null;
+
+        function openGroupModal(groupId=null) {
+          editingGroupId = groupId;
+          const btnDelete = document.getElementById("btn-group-delete-modal");
+          if (groupId) {
+            const g = groupById(groupId);
+            groupModalTitle.textContent = "Edit Group";
+            inputGroupName.value = g.name || "";
+            inputGroupDesc.value = g.desc || "";
+            if (btnDelete) btnDelete.style.display = '';
+          } else {
+            groupModalTitle.textContent = "Add Group";
+            inputGroupName.value = "";
+            inputGroupDesc.value = "";
+            if (btnDelete) btnDelete.style.display = 'none';
+          }
+          groupModalOverlay.classList.remove("hidden");
+          inputGroupName.focus();
+        }
+        // Delete group from modal
+        const btnGroupDeleteModal = document.getElementById("btn-group-delete-modal");
+        if (btnGroupDeleteModal) {
+          btnGroupDeleteModal.addEventListener("click", function() {
+            if (editingGroupId) {
+              const g = groupById(editingGroupId);
+              if (g && confirm(`Delete group "${g.name}" and all its topics and cards?`)) {
+                data.groups = data.groups.filter(x => x.id !== g.id);
+                saveData(data);
+                renderDashboard();
+                closeGroupModal();
+              }
+            }
+          });
+        }
+        function closeGroupModal() {
+          groupModalOverlay.classList.add("hidden");
+        }
+        btnGroupCancel.addEventListener("click", closeGroupModal);
+        groupModalOverlay.addEventListener("click", (e)=>{ if(e.target === groupModalOverlay) closeGroupModal(); });
+        btnGroupSave.addEventListener("click", ()=>{
+          const name = inputGroupName.value.trim();
+          const desc = inputGroupDesc.value.trim();
+          if (!name) { alert("Please provide a group name."); inputGroupName.focus(); return; }
+          if (editingGroupId) {
+            const g = groupById(editingGroupId);
+            g.name = name;
+            g.desc = desc;
+          } else {
+            data.groups.push({ id: uid(), name, desc, topics: [] });
+          }
+          saveData(data);
+          renderDashboard();
+          closeGroupModal();
+        });
+
+        // Create Group (open modal)
+        $("#btn-new-group").addEventListener('click', ()=>{
+          openGroupModal();
+        });
+
+        // Dashboard More Modal logic
+        const dashboardMoreModal = document.getElementById("dashboard-more-modal-overlay");
+        const btnDashboardMoreClose = document.getElementById("btn-dashboard-more-close");
+        btnDashboardMoreClose.addEventListener('click', ()=>{
+          // Save Pro Status value to settings when closing modal
+          const proInput = document.getElementById('pro-status-input');
+          if (proInput) {
+            let val = parseInt(proInput.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            if (!data.settings) data.settings = {};
+            const prevProStatus = data.settings.proStatus || 5;
+            data.settings.proStatus = val;
+            // Update all cards' statuses if needed
+            let changed = false;
+            for (const group of data.groups || []) {
+              for (const topic of group.topics || []) {
+                for (const card of topic.cards || []) {
+                  if (typeof card.consecutivePassed === 'number') {
+                    // If card was pro but now doesn't meet threshold, demote to passed
+                    if (card.status === 'pro' && card.consecutivePassed < val) {
+                      card.status = 'passed';
+                      changed = true;
+                    }
+                    // If card was passed but now meets/exceeds threshold, promote to pro
+                    if (card.status !== 'pro' && card.consecutivePassed >= val) {
+                      card.status = 'pro';
+                      changed = true;
+                    }
+                  }
+                }
+              }
+            }
+            saveData(data);
+            if (changed) renderDashboard();
+          }
+          dashboardMoreModal.classList.add('hidden');
+        });
+        dashboardMoreModal.addEventListener('click', (e)=>{
+          if(e.target === dashboardMoreModal) dashboardMoreModal.classList.add('hidden');
+        });
+
+        // Tab logic for dashboard more modal
+    const tabFile = document.getElementById('tab-file');
+    const tabSettings = document.getElementById('tab-settings');
+    const tabAbout = document.getElementById('tab-about');
+    const panelFile = document.getElementById('dashboard-more-file');
+    const panelSettings = document.getElementById('dashboard-more-settings');
+    const panelAbout = document.getElementById('dashboard-more-about');
+    function setDashboardMoreTab(tab) {
+      [tabFile, tabSettings, tabAbout].forEach(btn => btn.classList.remove('btn-primary'));
+      [panelFile, panelSettings, panelAbout].forEach(p => p.style.display = 'none');
+      if (tab === 'file') {
+        tabFile.classList.add('btn-primary');
+        panelFile.style.display = 'block';
+      } else if (tab === 'settings') {
+        tabSettings.classList.add('btn-primary');
+        panelSettings.style.display = 'block';
+      } else if (tab === 'about') {
+        tabAbout.classList.add('btn-primary');
+        panelAbout.style.display = 'block';
+      }
+    }
+    tabFile.onclick = () => setDashboardMoreTab('file');
+    tabSettings.onclick = () => setDashboardMoreTab('settings');
+    tabAbout.onclick = () => setDashboardMoreTab('about');
+    // Open modal with File tab active by default
+    const btnDashboardMore = document.getElementById("btn-dashboard-more");
+    btnDashboardMore.addEventListener('click', ()=>{
+      // Set Pro Status input value from settings every time modal opens
+      const proInput = document.getElementById('pro-status-input');
+      if (proInput) {
+        if (window.data && window.data.settings && typeof window.data.settings.proStatus !== 'undefined') {
+          proInput.value = window.data.settings.proStatus;
+        } else {
+          proInput.value = 5;
+        }
+      }
+      setDashboardMoreTab('file');
+      document.getElementById("dashboard-more-modal-overlay").classList.remove('hidden');
+    });
+        // Export / Import (Dashboard only)
+        function exportJSON(){
+          let filename = prompt('Enter a filename for your export:', 'flashcards_data');
+          if (filename === null) return; // User cancelled
+          filename = filename.trim();
+          if (!filename) filename = 'flashcards_data.json';
+          if (!filename.endsWith('.json')) filename += '.json';
+          // Build meta (without savedAt/createdAt)
+          const meta = {
+            app: "FlashLearn",
+            schema: 1.0
+          };
+          // Build settings
+          // Use the current settings from data, but update theme to match UI
+          const settings = Object.assign({}, data.settings || {});
+          settings.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+          const exportObj = {
+            meta,
+            groups: data.groups || [],
+            settings
+          };
+          const blob = new Blob([JSON.stringify(exportObj,null,2)], {type:'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+          URL.revokeObjectURL(url);
+        }
+        function importJSON(file){
+          const reader = new FileReader();
+          reader.onload = ()=>{
+            try{
+              let obj = JSON.parse(reader.result);
+              // migrate if old shape
+              if(Array.isArray(obj.topics)){ obj = migrate(obj); }
+              if(!obj || !Array.isArray(obj.groups)) throw new Error('Invalid format');
+              // If meta/settings exist, keep them, else add defaults (ignore savedAt/createdAt)
+              let meta = obj.meta || { app: "FlashLearn", version: "1.0.0", schema: 1.0, appCreator: { name: "Anatolij Semykin", github: "https://github.com/Anatoogle" } };
+              if (meta.savedAt) delete meta.savedAt;
+              if (meta.createdAt) delete meta.createdAt;
+              data = {
+                groups: obj.groups,
+                meta,
+                settings: obj.settings || { theme: 'light', proStatus: 5 }
+              };
+              // Set color mode from imported settings
+              if (data.settings && data.settings.theme) {
+                setTheme(data.settings.theme);
+              }
+              saveData(data); renderDashboard();
+              // Set the input value from imported settings
+              const proInput = document.getElementById("pro-status-input");
+              if (proInput && data.settings && typeof data.settings.proStatus !== 'undefined') {
+                proInput.value = data.settings.proStatus;
+              } else if (proInput) {
+                proInput.value = 5;
+              }
+              alert('Import successful!');
+            } catch(e){ alert('Import failed: '+e.message); }
+          };
+          reader.readAsText(file);
+        }
+
+        // Add JSON (combine groups)
+        function addJSON(file){
+          const reader = new FileReader();
+          reader.onload = ()=>{
+            try{
+              let obj = JSON.parse(reader.result);
+              if(Array.isArray(obj.topics)){ obj = migrate(obj); }
+              if(!obj || !Array.isArray(obj.groups)) throw new Error('Invalid format');
+              // Always add groups, generating new IDs to avoid conflicts
+              let added = 0;
+              for(const g0 of obj.groups){
+                // Deep clone group, topics, and cards
+                const g = {
+                  id: uid(),
+                  name: g0.name,
+                  desc: g0.desc,
+                  topics: Array.isArray(g0.topics) ? g0.topics.map(t0 => ({
+                    id: uid(),
+                    name: t0.name,
+                    desc: t0.desc,
+                    cards: Array.isArray(t0.cards) ? t0.cards.map(c0 => ({
+                      id: uid(),
+                      term: c0.term,
+                      expl: c0.expl,
+                      status: c0.status
+                    })) : []
+                  })) : []
+                };
+                data.groups.push(g);
+                added++;
+              }
+              saveData(data);
+              renderDashboard();
+              alert(added ? `Added ${added} group(s)!` : 'No new groups were added.');
+            } catch(e){ alert('Add JSON failed: '+e.message); }
+          };
+          reader.readAsText(file);
+        }
+        function migrate(obj){
+          const copy = JSON.parse(JSON.stringify(obj));
+          if(Array.isArray(copy.topics)){
+            const g = { id: uid(), name: "Imported Group", desc: "", topics: copy.topics };
+            delete copy.topics;
+            copy.groups = [g];
+          }
+          return copy;
+        }
+  // Removed duplicate handler for btn-save-as
+  document.getElementById("import-file").addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) importJSON(f); e.target.value=''; });
+  document.getElementById("add-json-file").addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) addJSON(f); e.target.value=''; });
+
+        // ----- Group View -----
+        function openGroup(gid){
+          currentGroupId = gid;
+          const g = groupById(currentGroupId);
+          if(!g){ renderDashboard(); return; }
+          setView("#view-group"); setBreadcrumb(["Dashboard", g.name]);
+          document.getElementById("group-title").textContent = g.name;
+          document.getElementById("group-desc").textContent = g.desc || "";
+          document.getElementById("btn-back-dashboard").onclick = renderDashboard;
+          document.getElementById("btn-group-add-topic").onclick = ()=>{
+            openTopicModal();
+          };
+          renderGroupTopics();
+        }
+
+        // ----- Topic Modal Logic (global) -----
+        const topicModalOverlay = document.getElementById("topic-modal-overlay");
+        const topicModalTitle = document.getElementById("topic-modal-title");
+        const inputTopicName = document.getElementById("topic-name");
+        const inputTopicDesc = document.getElementById("topic-desc-input");
+        const btnTopicSave = document.getElementById("btn-topic-save");
+        const btnTopicCancel = document.getElementById("btn-topic-cancel");
+        let editingTopicId = null;
+
+        function openTopicModal(topicId=null) {
+          editingTopicId = topicId;
+          const g = groupById(currentGroupId);
+          const btnDelete = document.getElementById("btn-topic-delete-modal");
+          const btnMove = document.getElementById("btn-topic-move");
+          // Clear previous move select options only
+          let moveSelect = document.getElementById("move-topic-group-select");
+          if (moveSelect) moveSelect.innerHTML = '';
+          if (!g) return;
+          if (topicId) {
+            const t = g.topics.find(x=>x.id===topicId);
+            topicModalTitle.textContent = "Edit Topic";
+            inputTopicName.value = t ? t.name : "";
+            inputTopicDesc.value = t ? t.desc : "";
+            if (btnDelete) btnDelete.style.display = '';
+            if (btnMove) btnMove.style.display = '';
+            btnMove.onclick = null;
+            btnMove.onclick = function() {
+              const moveModal = document.getElementById("move-topic-modal-overlay");
+              const groupSelect = document.getElementById("move-topic-group-select");
+              if (!moveModal || !groupSelect) {
+                alert("Move modal or group select not found in DOM.");
+                return;
+              }
+              // Always clear and repopulate group select
+              groupSelect.innerHTML = '';
+              for (const group of data.groups) {
+                if (group.id !== currentGroupId) {
+                  const opt = document.createElement("option");
+                  opt.value = group.id;
+                  opt.textContent = group.name;
+                  groupSelect.appendChild(opt);
+                }
+              }
+              // Show move modal on top of topic modal (do not hide topic modal)
+              moveModal.classList.remove("hidden");
+              // Remove previous listeners
+              const btnCancel = document.getElementById("btn-move-topic-cancel");
+              const btnConfirm = document.getElementById("btn-move-topic-confirm");
+              if (btnCancel) btnCancel.onclick = null;
+              if (btnConfirm) btnConfirm.onclick = null;
+              if (btnCancel) btnCancel.onclick = function() {
+                moveModal.classList.add("hidden");
+              };
+              if (btnConfirm) btnConfirm.onclick = function() {
+                const targetGroupId = groupSelect.value;
+                if (!targetGroupId) return;
+                const fromGroup = groupById(currentGroupId);
+                const toGroup = groupById(targetGroupId);
+                if (!fromGroup || !toGroup) return;
+                const topicIdx = fromGroup.topics.findIndex(x=>x.id===topicId);
+                if (topicIdx === -1) return;
+                const topicObj = fromGroup.topics.splice(topicIdx, 1)[0];
+                toGroup.topics.push(topicObj);
+                saveData(data);
+                renderGroupTopics();
+                closeTopicModal();
+                moveModal.classList.add("hidden");
+              };
+            };
+          } else {
+            topicModalTitle.textContent = "Add Topic";
+            inputTopicName.value = "";
+            inputTopicDesc.value = "";
+            if (btnDelete) btnDelete.style.display = 'none';
+            if (btnMove) btnMove.style.display = 'none';
+          }
+          topicModalOverlay.classList.remove("hidden");
+          inputTopicName.focus();
+        // Delete topic from modal
+        const btnTopicDeleteModal = document.getElementById("btn-topic-delete-modal");
+        if (btnTopicDeleteModal) {
+          btnTopicDeleteModal.addEventListener("click", function() {
+            if (editingTopicId) {
+              const g = groupById(currentGroupId);
+              const t = g && g.topics.find(x=>x.id===editingTopicId);
+              if (g && t && confirm(`Delete topic "${t.name}" and all its cards?`)) {
+                g.topics = g.topics.filter(x => x.id !== t.id);
+                saveData(data);
+                renderGroupTopics();
+                closeTopicModal();
+              }
+            }
+          });
+        }
+        }
+        function closeTopicModal() {
+          topicModalOverlay.classList.add("hidden");
+        }
+        btnTopicCancel.addEventListener("click", closeTopicModal);
+        topicModalOverlay.addEventListener("click", (e)=>{ if(e.target === topicModalOverlay) closeTopicModal(); });
+        btnTopicSave.addEventListener("click", ()=>{
+          const g = groupById(currentGroupId);
+          const name = inputTopicName.value.trim();
+          const desc = inputTopicDesc.value.trim();
+          if (!name) { alert("Please provide a topic name."); inputTopicName.focus(); return; }
+          if (editingTopicId) {
+            const t = g.topics.find(x=>x.id===editingTopicId);
+            t.name = name;
+            t.desc = desc;
+          } else {
+            // Always push a new topic object, not a reference
+            g.topics = Array.isArray(g.topics) ? [...g.topics, { id: uid(), name, desc, cards: [] }] : [{ id: uid(), name, desc, cards: [] }];
+          }
+          saveData(data);
+          renderGroupTopics();
+          closeTopicModal();
+        });
+
+        function renderGroupTopics(){
+          const g = groupById(currentGroupId); if(!g) return;
+          const grid = document.getElementById("topic-grid"); grid.innerHTML="";
+          if (!Array.isArray(g.topics) || !g.topics.length){
+            const empty = document.createElement("div"); empty.className="card muted"; empty.style.textAlign="center";
+            empty.textContent="No topics in this group yet. Click ＋ to add one."; grid.appendChild(empty); return;
+          }
+          for(const t of g.topics){
+            const s = computeTopicStats(t);
+            const el = document.createElement("div"); el.className="card";
+            el.style.display = 'flex';
+            el.style.flexDirection = 'column';
+            el.style.justifyContent = 'space-between';
+            el.setAttribute('draggable', 'true');
+            el.setAttribute('data-topic-id', t.id);
+            el.style.cursor = 'grab';
+            // Drag events
+            el.addEventListener('dragstart', function(e){
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', t.id);
+              el.classList.add('dragging');
+            });
+            el.addEventListener('dragend', function(e){
+              el.classList.remove('dragging');
+            });
+            el.addEventListener('dragover', function(e){
+              e.preventDefault();
+              el.classList.add('drag-over');
+            });
+            el.addEventListener('dragleave', function(e){
+              el.classList.remove('drag-over');
+            });
+            el.addEventListener('drop', function(e){
+              e.preventDefault();
+              el.classList.remove('drag-over');
+              const draggedId = e.dataTransfer.getData('text/plain');
+              if (draggedId === t.id) return;
+              const fromIdx = g.topics.findIndex(x=>x.id===draggedId);
+              const toIdx = g.topics.findIndex(x=>x.id===t.id);
+              if (fromIdx === -1 || toIdx === -1) return;
+              const [draggedTopic] = g.topics.splice(fromIdx, 1);
+              g.topics.splice(toIdx, 0, draggedTopic);
+              saveData(data);
+              renderGroupTopics();
+            });
+            // ...existing topic rendering logic...
+            // Limit topic name to max 50 characters for display
+            let topicName = t.name || "";
+            if (topicName.length > 50) topicName = topicName.slice(0, 50) + "…";
+            el.innerHTML = `
+              <div style="flex:1 1 auto;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div style="display:flex;align-items:flex-start;gap:8px">
+                    <span style="color:var(--primary);margin-top:2px;line-height:1.2;">📘</span>
+                    <h3 class="clamp-2" style="margin:0;font-size:18px;font-weight:700;max-height:48px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2;word-break:break-all;">${escapeHtml(topicName)}</h3>
+                  </div>
+                  <span class="badge ${s.pct===100?'badge-green':'badge-gray'}">${s.pct}% passed</span>
+                </div>
+                <p class="muted clamp-2" style="margin:6px 0 0;font-size:14px;max-height:40px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;">${t.desc ? escapeHtml(t.desc) : "<br><br>"}</p>
+              </div>
+              <div style="margin-top:auto;">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;text-align:center">
+                  <div class="card"><div class="muted" style="font-size:12px">Cards</div><div style="font-weight:700">${s.total}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Pro</div><div style="font-weight:700;color:#2563eb">${s.pro}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Passed</div><div style="font-weight:700;color:var(--green)">${s.passed}</div></div>
+                  <div class="card"><div class="muted" style="font-size:12px">Failed</div><div style="font-weight:700;color:var(--red)">${s.failed}</div></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px">
+                  <button class="btn btn-primary" style="min-width:100px" data-learn>▶ Start</button>
+                  <button class="btn btn-primary" style="flex:1" data-open-topic>Open</button>
+                  <button class="btn" style="" data-edit-topic title="Edit topic name and description">⚙️</button>
+                </div>
+              </div>`;
+            el.querySelector('[data-learn]').addEventListener("click", ()=>{ openTopic(currentGroupId, t.id); openSessionConfig(); });
+            el.querySelector('[data-open-topic]').addEventListener("click", ()=>openTopic(currentGroupId, t.id));
+            el.querySelector('[data-edit-topic]').addEventListener("click", ()=>{
+              openTopicModal(t.id);
+            });
+            grid.appendChild(el);
+          }
+        }
+
+        // ----- Topic View -----
+        function openTopic(gid, tid){
+          currentGroupId = gid;
+          currentTopicId = tid;
+          const g = groupById(currentGroupId);
+          const t = topicById(currentGroupId, currentTopicId);
+          if(!g || !t){ renderDashboard(); return; }
+          setView("#view-topic");
+          setBreadcrumb(["Dashboard", g.name, t.name]);
+          document.getElementById("topic-title").textContent = t.name;
+          document.getElementById("topic-desc").textContent = t.desc || "";
+          const backBtn = document.getElementById("btn-back-group");
+          backBtn.innerHTML = '<span aria-label="Back" style="font-size:18px">←</span>';
+          backBtn.onclick = ()=>openGroup(currentGroupId);
+          document.getElementById("btn-topic-learn").onclick = ()=>openSessionConfig();
+          document.getElementById("btn-topic-add").onclick = ()=>openCardModal();
+          // Always reset search/filter fields
+          const searchInput = document.getElementById("cards-search");
+          const filterInput = document.getElementById("cards-filter");
+          if (searchInput) searchInput.value = '';
+          if (filterInput) filterInput.value = 'all';
+          renderCardsGrid();
+        }
+
+        function renderCardsGrid(){
+          const t = topicById(currentGroupId, currentTopicId); if(!t) return;
+          const query = document.getElementById("cards-search").value.trim().toLowerCase();
+          const filter = document.getElementById("cards-filter").value;
+          const grid = document.getElementById("cards-grid"); grid.innerHTML='';
+          let cards = [...(t.cards||[])];
+          if (filter==='passed') cards = cards.filter(c=>c.status==='passed');
+          if (filter==='failed') cards = cards.filter(c=>c.status==='failed');
+          if (filter==='none') cards = cards.filter(c=>!c.status || c.status==='none');
+          if (filter==='pro') cards = cards.filter(c=>c.status==='pro');
+          if (query) cards = cards.filter(c => c.term.toLowerCase().includes(query) || (c.expl||'').toLowerCase().includes(query));
+          if (!cards.length){
+            const empty = document.createElement('div'); empty.className='card muted'; empty.style.textAlign='center';
+            empty.textContent='No cards match the current filter.'; grid.appendChild(empty); return;
+          }
+          for(let i=0; i<cards.length; i++){
+            const c = cards[i];
+            const card = document.createElement('div'); card.className='card';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'space-between';
+            card.setAttribute('draggable', 'true');
+            card.setAttribute('data-card-id', c.id);
+            card.style.cursor = 'grab';
+            // Drag events
+            card.addEventListener('dragstart', function(e){
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', c.id);
+              card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', function(e){
+              card.classList.remove('dragging');
+            });
+            card.addEventListener('dragover', function(e){
+              e.preventDefault();
+              card.classList.add('drag-over');
+            });
+            card.addEventListener('dragleave', function(e){
+              card.classList.remove('drag-over');
+            });
+            card.addEventListener('drop', function(e){
+              e.preventDefault();
+              card.classList.remove('drag-over');
+              const draggedId = e.dataTransfer.getData('text/plain');
+              if (draggedId === c.id) return;
+              const fromIdx = t.cards.findIndex(x=>x.id===draggedId);
+              const toIdx = t.cards.findIndex(x=>x.id===c.id);
+              if (fromIdx === -1 || toIdx === -1) return;
+              const [draggedCard] = t.cards.splice(fromIdx, 1);
+              t.cards.splice(toIdx, 0, draggedCard);
+              saveData(data);
+              renderCardsGrid();
+            });
+            // ...existing card rendering logic...
+            let statusLabel;
+            if (!c.status || c.status === 'none') {
+              statusLabel = 'New';
+            } else if (c.status === 'pro') {
+              statusLabel = 'Pro';
+            } else {
+              statusLabel = c.status[0].toUpperCase() + c.status.slice(1);
+            }
+            let badgeClass = 'badge-gray';
+            if (c.status==='passed') badgeClass = 'badge-green';
+            else if (c.status==='failed') badgeClass = 'badge-red';
+            else if (c.status==='pro') badgeClass = 'badge-blue';
+            card.innerHTML = `
+              <div style="flex:1 1 auto;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                  <h4 style="margin:0;font-size:16px;font-weight:700;word-break:break-all;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;max-height:120px;white-space:pre-wrap;">${escapeHtml(c.term).replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')}</h4>
+                  <span class="badge ${badgeClass}">${statusLabel}</span>
+                </div>
+                <p class="clamp-2" style="margin-top:20px;font-size:14px;max-height:40px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml((c.expl||''))
+                  .replace(/\n/g,' ') || "<br><br>"}</p>
+              </div>
+              <div style="margin-top:8px">
+                <select class="select" data-id="${c.id}">
+                  <option value="none" ${c.status==='none'?'selected':''}>New</option>
+                  <option value="passed" ${c.status==='passed'?'selected':''}>Passed</option>
+                  <option value="failed" ${c.status==='failed'?'selected':''}>Failed</option>
+                  <option value="pro" ${c.status==='pro'?'selected':''}>Pro</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn" data-edit="${c.id}">✎ Edit</button>
+                <span style="flex:1"></span>
+                <button class="btn" data-move="${c.id}" title="Move to Topic">⇄</button>
+                <button class="btn btn-danger" data-del="${c.id}">Delete</button>
+              </div>`;
+            card.querySelector('select').addEventListener('change', (e)=>{
+              const v = e.target.value; const cardObj = t.cards.find(x=>x.id===c.id);
+              cardObj.status = v;
+              if (v === 'none' || v === 'failed') {
+                cardObj.consecutivePassed = 0;
+              }
+              // For 'pro' and 'passed', do not change consecutivePassed
+              saveData(data); renderCardsGrid();
+            });
+            card.querySelector('[data-edit]').addEventListener('click', ()=>openCardModal(c.id));
+            card.querySelector('[data-del]').addEventListener('click', ()=>{
+              if(confirm(`Delete card "${c.term}"?`)){
+                t.cards = t.cards.filter(x=>x.id!==c.id); saveData(data); renderCardsGrid();
+              }
+            });
+            card.querySelector('[data-move]').addEventListener('click', ()=>{
+              const moveModal = document.getElementById("move-card-modal-overlay");
+              const topicSelect = document.getElementById("move-card-topic-select");
+              topicSelect.innerHTML = '';
+              const g = groupById(currentGroupId);
+              if (!g) return;
+              for (const topic of g.topics) {
+                if (topic.id !== currentTopicId) {
+                  const opt = document.createElement("option");
+                  opt.value = topic.id;
+                  opt.textContent = topic.name;
+                  topicSelect.appendChild(opt);
+                }
+              }
+              moveModal.classList.remove("hidden");
+              // Remove previous listeners
+              const btnCancel = document.getElementById("btn-move-card-cancel");
+              const btnConfirm = document.getElementById("btn-move-card-confirm");
+              if (btnCancel) btnCancel.onclick = null;
+              if (btnConfirm) btnConfirm.onclick = null;
+              btnCancel.onclick = function() {
+                moveModal.classList.add("hidden");
+              };
+              btnConfirm.onclick = function() {
+                const targetTopicId = topicSelect.value;
+                if (!targetTopicId) return;
+                const fromTopic = topicById(currentGroupId, currentTopicId);
+                const toTopic = topicById(currentGroupId, targetTopicId);
+                if (!fromTopic || !toTopic) return;
+                const cardIdx = fromTopic.cards.findIndex(x=>x.id===c.id);
+                if (cardIdx === -1) return;
+                const cardObj = fromTopic.cards.splice(cardIdx, 1)[0];
+                toTopic.cards.push(cardObj);
+                saveData(data);
+                renderCardsGrid();
+                moveModal.classList.add("hidden");
+              };
+            });
+            grid.appendChild(card);
+          }
+        }
+
+        // ----- Card Modal -----
+        const modalOverlay = document.getElementById("card-modal-overlay");
+        const modalTitle = document.getElementById("card-modal-title");
+        const inputTerm = document.getElementById("card-term");
+        const inputExpl = document.getElementById("card-expl");
+        const btnSave = document.getElementById("btn-card-save");
+        const btnCancel = document.getElementById("btn-card-cancel");
+        let editingCardId = null;
+
+        function openCardModal(cardId=null){
+          editingCardId = cardId;
+          const t = topicById(currentGroupId, currentTopicId); if(!t) return;
+          if(cardId){
+            const c = t.cards.find(x=>x.id===cardId);
+            modalTitle.textContent = "Edit Card";
+            inputTerm.value = c.term || "";
+            inputExpl.value = c.expl || "";
+          } else {
+            modalTitle.textContent = "Add Card";
+            inputTerm.value = "";
+            inputExpl.value = "";
+          }
+          enhanceCodeArea(inputExpl);
+          enhanceCodeArea(inputTerm);
+          modalOverlay.classList.remove("hidden");
+          inputTerm.focus();
+        }
+        function closeCardModal(){
+          modalOverlay.classList.add("hidden");
+        }
+        btnCancel.addEventListener("click", closeCardModal);
+        modalOverlay.addEventListener("click", (e)=>{ if(e.target === modalOverlay) closeCardModal(); });
+        btnSave.addEventListener("click", ()=>{
+          const t = topicById(currentGroupId, currentTopicId); if(!t) return;
+          const term = inputTerm.value.trim();
+          const expl = inputExpl.value;
+          if(!term){ alert("Please provide a term."); inputTerm.focus(); return; }
+          if(editingCardId){
+            const c = t.cards.find(x=>x.id===editingCardId);
+            c.term = term; c.expl = expl;
+          } else {
+            if(!Array.isArray(t.cards)) t.cards = [];
+            t.cards.push({ id: uid(), term, expl, status:'none' });
+          }
+          saveData(data);
+          renderCardsGrid();
+          closeCardModal();
+        });
+
+        // ----- Session Flow -----
+        function openSessionConfig(){
+          const g = groupById(currentGroupId); const t = topicById(currentGroupId, currentTopicId); if(!g || !t) return;
+          setView("#view-session"); setBreadcrumb(["Dashboard", g.name, t.name, "Session"]);
+          document.getElementById("session-topic-title").textContent = `Session — ${t.name}`;
+          const s = computeTopicStats(t);
+          // Update dropdown options with counts
+          const pileSelect = document.getElementById("session-pile");
+          pileSelect.options[0].textContent = `All (${s.total})`;
+          pileSelect.options[1].textContent = `Passed (${s.passed})`;
+          pileSelect.options[2].textContent = `Failed (${s.failed})`;
+          // Add/update New count if present
+          if (pileSelect.options[3]) {
+            const newCount = (t.cards||[]).filter(c=>!c.status || c.status==='none').length;
+            pileSelect.options[3].textContent = `New (${newCount})`;
+          }
+          if (pileSelect.options[4]) {
+            const proCount = (t.cards||[]).filter(c=>c.status==='pro').length;
+            pileSelect.options[4].textContent = `Pro (${proCount})`;
+          }
+          document.getElementById("session-container").classList.add('hidden');
+          document.getElementById("session-config").classList.remove('hidden');
+          document.getElementById("compare-wrap").classList.add('hidden');
+          document.getElementById("submit-row").classList.remove('hidden');
+        }
+
+        function shuffle(arr){
+          for(let i=arr.length-1;i>0;i--){
+            const j = Math.floor(Math.random()*(i+1));
+            const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+          }
+          return arr;
+        }
+
+        document.getElementById("btn-session-begin").addEventListener('click', ()=>{
+          const t = topicById(currentGroupId, currentTopicId); if(!t) return;
+          const pile = document.getElementById("session-pile").value;
+          const count = Math.max(1, parseInt(document.getElementById("session-count").value || '1', 10));
+          const order = document.getElementById("session-order").value;
+          let pool = t.cards || [];
+          if(pile==='passed') pool = (t.cards||[]).filter(c=>c.status==='passed');
+          if(pile==='failed') pool = (t.cards||[]).filter(c=>c.status==='failed');
+          if(pile==='none') pool = (t.cards||[]).filter(c=>!c.status || c.status==='none');
+          if(pile==='pro') pool = (t.cards||[]).filter(c=>c.status==='pro');
+          if(!pool.length){ alert('No cards in selected pile.'); return; }
+          let deckArr = [...pool];
+          if(order === 'random') deckArr = shuffle(deckArr);
+          const deck = deckArr.slice(0, Math.min(count, deckArr.length)).map(c=>c.id);
+          session = { groupId: currentGroupId, topicId: t.id, pile, deck, i:0, passed:0, failed:0, lastUserAnswer:'' };
+          document.getElementById("session-config").classList.add('hidden');
+          document.getElementById("session-container").classList.remove('hidden');
+          const si = document.getElementById("session-input"); si.value=''; si.focus();
+          document.getElementById("compare-wrap").classList.add('hidden');
+          document.getElementById("submit-row").classList.remove('hidden');
+          renderCurrentCard();
+        });
+
+        document.getElementById("btn-submit-answer").addEventListener('click', ()=>{
+          if(!session) return;
+          const t = topicById(session.groupId, session.topicId);
+          const card = t.cards.find(c=>c.id===session.deck[session.i]);
+          const userText = (document.getElementById("session-input").value || '').trim();
+          session.lastUserAnswer = userText;
+          document.getElementById("user-answer").textContent = userText || "(no answer)";
+          document.getElementById("user-term").textContent = (card && card.term) ? card.term : "(no term)";
+          document.getElementById("user-answer").style.display = '';
+          document.getElementById("user-term").style.display = 'none';
+          document.getElementById("toggle-answer-label").textContent = 'Your answer';
+          document.getElementById("btn-toggle-answer").textContent = 'Show Term';
+          document.getElementById("correct-answer").textContent = (card && card.expl) ? card.expl : "(no reference answer saved)";
+          document.getElementById("compare-wrap").classList.remove('hidden');
+          document.getElementById("submit-row").classList.add('hidden');
+        });
+
+        // Toggle between 'Your answer' and 'Term'
+        document.addEventListener('click', function(e) {
+          if (e.target && e.target.id === 'btn-toggle-answer') {
+            const userAnswer = document.getElementById('user-answer');
+            const userTerm = document.getElementById('user-term');
+            const label = document.getElementById('toggle-answer-label');
+            const btn = document.getElementById('btn-toggle-answer');
+            if (userAnswer.style.display !== 'none') {
+              userAnswer.style.display = 'none';
+              userTerm.style.display = '';
+              label.textContent = 'Term';
+              btn.textContent = 'Show Your Answer';
+            } else {
+              userAnswer.style.display = '';
+              userTerm.style.display = 'none';
+              label.textContent = 'Your answer';
+              btn.textContent = 'Show Term';
+            }
           }
         });
-        grid.appendChild(card);
+
+        function renderCurrentCard(){
+          if(!session) return;
+          const t = topicById(session.groupId, session.topicId);
+          const total = session.deck.length;
+          if(session.i >= total){ showSummary(); return; }
+          const card = t.cards.find(c=>c.id===session.deck[session.i]);
+          const sessionTermDiv = document.getElementById("session-term");
+          if (card && card.term) {
+            sessionTermDiv.innerHTML = escapeHtml(card.term).replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+            sessionTermDiv.style.whiteSpace = 'pre-wrap';
+          } else {
+            sessionTermDiv.textContent = 'Unknown card';
+            sessionTermDiv.style.whiteSpace = '';
+          }
+          document.getElementById("session-progress").textContent = `Card ${session.i+1} of ${total} — Passed: ${session.passed}, Failed: ${session.failed}`;
+          document.getElementById("session-input").focus();
+        }
+
+        function handlePassFail(result){
+          if(!session) return;
+          const t = topicById(session.groupId, session.topicId);
+          const card = t.cards.find(c=>c.id===session.deck[session.i]);
+          if (!card) { session.i++; renderCurrentCard(); return; }
+          if (result === 'pass') {
+            session.passed++;
+            card.consecutivePassed = (card.consecutivePassed || 0) + 1;
+            if (card.consecutivePassed >= 5) {
+              card.status = 'pro';
+            } else {
+              card.status = 'passed';
+            }
+          } else {
+            session.failed++;
+            card.consecutivePassed = 0;
+            card.status = 'failed';
+          }
+          saveData(data);
+          session.i++;
+          document.getElementById("session-input").value='';
+          document.getElementById("compare-wrap").classList.add('hidden');
+          document.getElementById("submit-row").classList.remove('hidden');
+          renderCurrentCard();
+        }
+
+        document.getElementById("btn-pass").onclick = ()=>handlePassFail('pass');
+        document.getElementById("btn-fail").onclick = ()=>handlePassFail('fail');
+
+        function showSummary(){
+          const total = session.deck.length;
+          setView("#view-session-summary");
+          const g = groupById(session.groupId); const t = topicById(session.groupId, session.topicId);
+          setBreadcrumb(["Dashboard", g?.name || "Group", t?.name || "Topic", "Summary"]);
+          document.getElementById("summary-text").textContent = `You reviewed ${total} card(s).\n- Passed: ${session.passed}\n- Failed: ${session.failed}.`;
+          document.getElementById("summary-text").style.whiteSpace = 'pre-line';
+        }
+
+        document.getElementById("btn-exit-session").onclick = ()=>{ const gid = session? session.groupId: currentGroupId; const tid = session? session.topicId: currentTopicId; session=null; openTopic(gid, tid); };
+        document.getElementById("btn-finish-summary").onclick = ()=>{ const gid = session? session.groupId: currentGroupId; const tid = session? session.topicId: currentTopicId; session=null; openTopic(gid, tid); };
+
+        // ----- Utilities -----
+        function escapeHtml(str){
+          return (str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+        }
+        window.escapeHtml = escapeHtml;
+
+        // enhance static areas
+        // Auto-resize for session-input textarea
+        const sessionInput = document.getElementById("session-input");
+        function autoResizeTextarea(el) {
+          el.style.height = 'auto';
+          el.style.height = (el.scrollHeight) + 'px';
+        }
+        if (sessionInput) {
+          sessionInput.addEventListener('input', function() { autoResizeTextarea(this); });
+          // Initial resize
+          autoResizeTextarea(sessionInput);
+        }
+        enhanceCodeArea(sessionInput);
+        enhanceCodeArea(document.getElementById("card-expl"));
+        enhanceCodeArea(document.getElementById("card-term"));
+
+        // Initial render
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", renderDashboard);
+        } else {
+          renderDashboard();
+        }
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred. Open the console (F12) for details.");
       }
-    }
+  })();
+  </script>
+</body>
+</html>
+  </script>
+</body>
+</html>
 
-    document.getElementById('cards-search').addEventListener('input', renderCardsGrid);
-    document.getElementById('cards-filter').addEventListener('change', renderCardsGrid);
-    document.getElementById('btn-add-card').addEventListener('click', ()=>openCardModal());
-
-    function openCardModal(cardId=null){
-      const t = topicById(currentTopicId);
-      editingCardId = cardId;
-      document.getElementById('modal-card-topic').textContent = t.name;
-      document.getElementById('modal-card-title').textContent = cardId ? 'Edit Card' : 'Add New Card';
-      document.getElementById('modal-card-save').textContent = cardId ? 'Save' : '＋ Add Card';
-      if (cardId){
-        const c = t.cards.find(x=>x.id===cardId);
-        document.getElementById('modal-card-term').value = c.term;
-        document.getElementById('modal-card-expl').value = c.expl || '';
-      } else {
-        document.getElementById('modal-card-term').value = '';
-        document.getElementById('modal-card-expl').value = '';
-      }
-      document.getElementById('modal-card').classList.remove('hidden');
-    }
-    function closeCardModal(){ document.getElementById('modal-card').classList.add('hidden'); }
-    document.getElementById('modal-card-close').onclick = closeCardModal;
-    document.getElementById('modal-card-cancel').onclick = closeCardModal;
-    document.getElementById('modal-card').addEventListener('click', (e)=>{ if(e.target.id==='modal-card') closeCardModal(); });
-    document.getElementById('modal-card-save').addEventListener('click', ()=>{
-      const term = document.getElementById('modal-card-term').value.trim();
-      const expl = document.getElementById('modal-card-expl').value.trim();
-      if(!term || !expl){ alert('Please enter both term and explanation.'); return; }
-      const t = topicById(currentTopicId);
-      if (editingCardId){
-        const c = t.cards.find(x=>x.id===editingCardId); c.term = term; c.expl = expl;
-      } else {
-        t.cards.push({ id: uid(), term, expl, status:'none' });
-      }
-      saveData(data); closeCardModal(); renderCardsGrid();
-    });
-
-    function openSessionModal(){
-      const t = topicById(currentTopicId);
-      const s = computeStats(t);
-      document.getElementById('modal-session-stats').textContent = \`Available — All: \${s.total}, Passed: \${s.passed}, Failed: \${s.failed}\`;
-      document.getElementById('modal-session').classList.remove('hidden');
-    }
-    function closeSessionModal(){ document.getElementById('modal-session').classList.add('hidden'); }
-    document.getElementById('btn-topic-learn').addEventListener('click', openSessionModal);
-    document.getElementById('modal-session-close').onclick = closeSessionModal;
-    document.getElementById('modal-session-cancel').onclick = closeSessionModal;
-    document.getElementById('modal-session').addEventListener('click', (e)=>{ if(e.target.id==='modal-session') closeSessionModal(); });
-    document.getElementById('modal-session-start').addEventListener('click', ()=>{
-      document.getElementById('session-pile').value = document.getElementById('modal-session-pile').value;
-      document.getElementById('session-count').value = document.getElementById('modal-session-count').value;
-      closeSessionModal();
-      setView('#view-session');
-      document.getElementById('session-config').classList.remove('hidden');
-      document.getElementById('session-container').classList.add('hidden');
-      document.getElementById('btn-session-begin').click();
-    });
-
-    document.getElementById('btn-session-begin').addEventListener('click', ()=>{
-      const t = topicById(currentTopicId);
-      const pile = document.getElementById('session-pile').value;
-      const count = Math.max(1, parseInt(document.getElementById('session-count').value || '1', 10));
-      let pool = t.cards;
-      if(pile==='passed') pool = t.cards.filter(c=>c.status==='passed');
-      if(pile==='failed') pool = t.cards.filter(c=>c.status==='failed');
-      if(!pool.length){ alert('No cards in selected pile.'); return; }
-      const deck = [...pool].sort(()=>Math.random()-0.5).slice(0, Math.min(count, pool.length)).map(c=>c.id);
-      session = { topicId: t.id, pile, deck, i:0, passed:0, failed:0 };
-      document.getElementById('session-config').classList.add('hidden');
-      document.getElementById('session-container').classList.remove('hidden');
-      document.getElementById('session-input').value='';
-      renderCurrentCard();
-    });
-
-    function renderCurrentCard(){
-      if(!session) return;
-      const t = topicById(session.topicId);
-      const total = session.deck.length;
-      if(session.i >= total){ showSummary(); return; }
-      const card = t.cards.find(c=>c.id===session.deck[session.i]);
-      document.getElementById('session-term').textContent = card ? card.term : 'Unknown card';
-      document.getElementById('session-progress').textContent = \`Card \${session.i+1} of \${total} — Passed: \${session.passed}, Failed: \${session.failed}\`;
-      document.getElementById('session-input').focus();
-    }
-    function handlePassFail(result){
-      if(!session) return;
-      const t = topicById(session.topicId);
-      const card = t.cards.find(c=>c.id===session.deck[session.i]);
-      if(result==='pass'){ session.passed++; if(card) card.status='passed'; }
-      else { session.failed++; if(card) card.status='failed'; }
-      saveData(data); session.i++; document.getElementById('session-input').value=''; renderCurrentCard();
-    }
-    document.getElementById('btn-pass').onclick = ()=>handlePassFail('pass');
-    document.getElementById('btn-fail').onclick = ()=>handlePassFail('fail');
-    function showSummary(){
-      const total = session.deck.length;
-      document.getElementById('session-summary').classList.remove('hidden');
-      document.getElementById('summary-text').textContent = \`You reviewed \${total} card(s). Passed: \${session.passed}, Failed: \${session.failed}.\`;
-    }
-    document.getElementById('btn-exit-session').onclick = ()=>{ const tid = session? session.topicId: currentTopicId; session=null; openTopic(tid); };
-    document.getElementById('btn-summary-back').onclick = ()=>{ const tid = session? session.topicId: currentTopicId; session=null; openTopic(tid); };
-
-    function exportJSON(){
-      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='flashcards_data.json'; a.click();
-      URL.revokeObjectURL(url);
-    }
-    function importJSON(file){
-      const reader = new FileReader();
-      reader.onload = ()=>{
-        try{
-          const obj = JSON.parse(reader.result);
-          if(!obj || !Array.isArray(obj.topics)) throw new Error('Invalid format');
-          data = obj; saveData(data); renderDashboard(); alert('Import successful!');
-        } catch(e){ alert('Import failed: '+e.message); }
-      };
-      reader.readAsText(file);
-    }
-    document.getElementById('btn-export').onclick = exportJSON;
-    document.getElementById('import-file').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) importJSON(f); e.target.value=''; });
-
-    document.getElementById('btn-new-topic').addEventListener('click', ()=>{
-      const name = prompt('Topic name:'); if(!name) return;
-      const desc = prompt('Short description (optional):') || '';
-      data.topics.push({ id: uid(), name: name.trim(), desc: desc.trim(), cards: [] });
-      saveData(data); renderDashboard();
-    });
-    window.addEventListener('DOMContentLoaded', renderDashboard);
   </script>
 </body>
 </html>
