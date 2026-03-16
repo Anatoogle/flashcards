@@ -661,29 +661,47 @@
               const start = ta.selectionStart, end = ta.selectionEnd;
               e.preventDefault();
               withSel((val,start,end)=>{
-                // Indent only the selected/current lines, not the next line
-                const ls = val.lastIndexOf("\n", start-1)+1;
-                // Find the end of the last selected line, not the next line
-                let le = val.indexOf("\n", end);
-                if (le === -1) le = val.length; // If no more newlines, go to end
-                else le = le; // Do not add +1, so we don't include the next line
-                const lines = val.slice(ls,le).split("\n");
-                let delta = 0, text;
-                if(e.shiftKey){
-                  text = lines.map(l=>{
-                    if(l.startsWith(INDENT)){ delta--; return l.slice(INDENT.length); }
-                    if(l.startsWith("\t")){ delta--; return l.slice(1); }
-                    return l;
-                  }).join("\n");
-                } else {
-                  text = lines.map(l=>{ delta++; return INDENT+l; }).join("\n");
-                }
-                const value = val.slice(0,ls)+text+val.slice(le);
-                // If no selection, move cursor after indent on that line
                 if (start === end) {
-                  const caret = start + INDENT.length;
-                  return {value, selStart: caret, selEnd: caret};
+                  // No selection: insert indent at cursor position only
+                  if (e.shiftKey) {
+                    // Optionally, handle Shift+Tab for single-cursor (could remove indent before cursor)
+                    const before = val.slice(0, start);
+                    const after = val.slice(start);
+                    // Remove INDENT before cursor if present
+                    if (before.endsWith(INDENT)) {
+                      const newBefore = before.slice(0, -INDENT.length);
+                      const caret = start - INDENT.length;
+                      return { value: newBefore + after, selStart: caret, selEnd: caret };
+                    } else if (before.endsWith("\t")) {
+                      const newBefore = before.slice(0, -1);
+                      const caret = start - 1;
+                      return { value: newBefore + after, selStart: caret, selEnd: caret };
+                    } else {
+                      return null;
+                    }
+                  } else {
+                    const before = val.slice(0, start);
+                    const after = val.slice(start);
+                    const caret = start + INDENT.length;
+                    return { value: before + INDENT + after, selStart: caret, selEnd: caret };
+                  }
                 } else {
+                  // Selection: indent all selected lines
+                  const ls = val.lastIndexOf("\n", start-1)+1;
+                  let le = val.indexOf("\n", end);
+                  if (le === -1) le = val.length;
+                  const lines = val.slice(ls,le).split("\n");
+                  let delta = 0, text;
+                  if(e.shiftKey){
+                    text = lines.map(l=>{
+                      if(l.startsWith(INDENT)){ delta--; return l.slice(INDENT.length); }
+                      if(l.startsWith("\t")){ delta--; return l.slice(1); }
+                      return l;
+                    }).join("\n");
+                  } else {
+                    text = lines.map(l=>{ delta++; return INDENT+l; }).join("\n");
+                  }
+                  const value = val.slice(0,ls)+text+val.slice(le);
                   const selStart = e.shiftKey ? Math.max(ls, start + (start===ls?0:(delta<0?delta*INDENT.length:0))) : start + INDENT.length;
                   const selEnd = end + (delta*INDENT.length);
                   return {value, selStart, selEnd};
@@ -979,9 +997,19 @@
           }
           dashboardMoreModal.classList.add('hidden');
         });
-        dashboardMoreModal.addEventListener('click', (e)=>{
-          if(e.target === dashboardMoreModal) dashboardMoreModal.classList.add('hidden');
-        });
+        // Only close modal if both mousedown and mouseup are outside
+        (function(){
+          let mouseDownOutside = false;
+          dashboardMoreModal.addEventListener('mousedown', function(e){
+            mouseDownOutside = (e.target === dashboardMoreModal);
+          });
+          dashboardMoreModal.addEventListener('mouseup', function(e){
+            if(mouseDownOutside && e.target === dashboardMoreModal){
+              dashboardMoreModal.classList.add('hidden');
+            }
+            mouseDownOutside = false;
+          });
+        })();
 
         // Tab logic for dashboard more modal
     const tabFile = document.getElementById('tab-file');
@@ -1550,7 +1578,19 @@
           modalOverlay.classList.add("hidden");
         }
         btnCancel.addEventListener("click", closeCardModal);
-        modalOverlay.addEventListener("click", (e)=>{ if(e.target === modalOverlay) closeCardModal(); });
+        // Only close modal if both mousedown and mouseup are outside
+        (function(){
+          let mouseDownOutside = false;
+          modalOverlay.addEventListener('mousedown', function(e){
+            mouseDownOutside = (e.target === modalOverlay);
+          });
+          modalOverlay.addEventListener('mouseup', function(e){
+            if(mouseDownOutside && e.target === modalOverlay){
+              closeCardModal();
+            }
+            mouseDownOutside = false;
+          });
+        })();
         btnSave.addEventListener("click", ()=>{
           const t = topicById(currentGroupId, currentTopicId); if(!t) return;
           const term = inputTerm.value.trim();
