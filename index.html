@@ -132,24 +132,54 @@
           if (btnSaveAs) {
             btnSaveAs.addEventListener('click', function() {
               try {
-                // Use the current in-memory data object
-                var exportObj = window.data || data;
                 var filename = prompt('Enter a filename for your export:', 'flashcards_data.json');
                 if (filename === null) return;
                 filename = filename.trim();
                 if (!filename) filename = 'flashcards_data.json';
                 if (!filename.endsWith('.json')) filename += '.json';
-                var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type:'application/json'});
+
+                // Build a safe export object (include meta + groups + settings)
+                var meta = { app: 'FlashLearn', schema: 1.0 };
+                var settings = Object.assign({}, (data && data.settings) || {});
+                settings.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+                var exportObj = {
+                  meta: meta,
+                  groups: (data && data.groups) ? data.groups : [],
+                  settings: settings
+                };
+
+                // Serialize with defensive checks
+                var json;
+                try {
+                  json = JSON.stringify(exportObj, null, 2);
+                } catch (err) {
+                  alert('Failed to serialize data for export: ' + (err && err.message ? err.message : err));
+                  return;
+                }
+                if (!json || json.length === 0) {
+                  alert('Nothing to save (empty export).');
+                  return;
+                }
+
+                // Helpful console output for debugging
+                try { console.log('Exporting JSON, length:', json.length); } catch (e) {}
+
+                var blob = new Blob([json], { type: 'application/json' });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
                 a.href = url;
                 a.download = filename;
                 document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+
+                // Delay revoke/remove slightly to avoid a race where some browsers
+                // produce an empty file if the object URL is revoked too quickly.
+                setTimeout(function() {
+                  try { URL.revokeObjectURL(url); } catch (e) {}
+                  try { document.body.removeChild(a); } catch (e) {}
+                }, 200);
               } catch (e) {
-                alert('Save failed: ' + e.message);
+                alert('Save failed: ' + (e && e.message ? e.message : e));
               }
             });
           }
